@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FaithQuest – Bible Trivia Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(to bottom right, #fdfbfb, #ebedee);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      text-align: center;
+    }
+    .box {
+      background: white;
+      padding: 2em;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+      max-width: 400px;
+      width: 90%;
+    }
+    h1 {
+      color: #4a4a4a;
+    }
+    p {
+      color: #666;
+    }
+    button {
+      margin: 1em 0;
+      padding: 0.8em 1.5em;
+      font-size: 1em;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #5c8df6;
+      color: white;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #416ce1;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>🙏 Welcome to FaithQuest</h1>
+    <p>A fun and inspiring Bible trivia adventure!</p>
+    <button onclick="location.href='faithquest.html'">▶️ Start Game</button>
+    <button onclick="location.href='faithquest.html#leaderboard'">🏆 View Leaderboard</button>
+    <button onclick="alert('Created by Bradley Virtual Solutions.\nFaith-based learning through tech.')">ℹ️ About</button>
+  </div>
+</body>
+</html>
