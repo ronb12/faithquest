@@ -1,150 +1,266 @@
-<!-- Full FaithQuest Code continued -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyAWT0pDA0Rqv9GI8wVgAOZKakpydjTI6z4",
-  authDomain: "faithquest-1a124.firebaseapp.com",
-  projectId: "faithquest-1a124",
-  storageBucket: "faithquest-1a124.appspot.com",
-  messagingSenderId: "680483549913",
-  appId: "1:680483549913:web:e8b89d00d7add3540284c8"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
-let currentUser = null;
-auth.signInAnonymously().then(res => currentUser = res.user);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FaithQuest – Bible Trivia Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(to bottom, #f9f9f9, #e0eafc);
+      margin: 0; padding: 0; text-align: center;
+    }
+    .container { max-width: 600px; margin: auto; padding: 2em; }
+    .question-box {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 2em;
+      margin-top: 1em;
+    }
+    .option {
+      background: #f1f1f1;
+      margin: 0.5em 0;
+      padding: 1em;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .option:hover { background: #d6f0ff; }
+    .correct { background: #c8f7c5 !important; }
+    .incorrect { background: #ffc2c2 !important; }
+    .score-bar { margin-top: 1em; font-size: 1.1em; }
+    .explanation { margin-top: 1em; font-style: italic; color: #555; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Intro Screen -->
+    <div id="introScreen" style="text-align: center; padding: 2em;">
+      <h2>🎮 Welcome to FaithQuest</h2>
+      <div id="introAvatar" style="margin: 1em 0;"></div>
+      <div id="introDetails"></div>
+      <button onclick="proceedToDifficulty()">Start</button>
+    </div>
 
-function loadTheme() {
-  const saved = localStorage.getItem("theme") || "default";
-  setTheme(saved);
-}
-function setTheme(theme) {
-  document.body.style.background =
-    theme === "dark" ? "#121212" :
-    theme === "ocean" ? "linear-gradient(to bottom, #0088cc, #004466)" :
-    "linear-gradient(to bottom, #f9f9f9, #e0eafc)";
-}
-function capitalize(word) {
-  return word.charAt(0).toUpperCase() + word.slice(1);
-}
-function renderAvatar() {
-  const avatar = localStorage.getItem("avatar") || "seeker";
-  const mini = document.getElementById("avatarMini");
-  const final = document.getElementById("avatarFinal");
-  const img = `<img src='avatars/${avatar}.png' alt='avatar' style='width:32px;height:32px;border-radius:50%;'>`;
-  mini.innerHTML = img;
-  final.innerHTML = img;
-}
-function showIntro() {
-  const avatar = localStorage.getItem("avatar") || "seeker";
-  const xp = parseInt(localStorage.getItem("totalXP") || '0');
-  const level = Math.floor(xp / 100) + 1;
-  document.getElementById("introAvatar").innerHTML = `<img src='avatars/${avatar}.png' style='width:64px;height:64px;border-radius:50%;'>`;
-  document.getElementById("introDetails").innerHTML = `<p><strong>Level ${level}</strong> ${capitalize(avatar)}</p><p>Total XP: ${xp}</p>`;
-  document.getElementById("difficulty-select").style.display = "none";
-  document.getElementById("introScreen").style.display = "block";
-}
-function proceedToDifficulty() {
-  document.getElementById("introScreen").style.display = "none";
-  document.getElementById("difficulty-select").style.display = "block";
-}
+    <!-- Difficulty Selection -->
+    <div id="difficulty-select" style="display:none;">
+      <p><strong>Select a difficulty:</strong></p>
+      <div>
+        <button onclick="startGame('easy')">🟢 Easy</button>
+        <button onclick="startGame('medium')">🟡 Medium</button>
+        <button onclick="startGame('hard')">🔴 Hard</button>
+      </div>
+    </div>
 
-let questions = [], current = 0, lives = 3, xp = 0, xpPerCorrect = 10, difficulty = "easy";
-const easy = [...]; // Add easy question objects
-const medium = [...]; // Add medium question objects
-const hard = [...]; // Add hard question objects
+    <!-- Main Game Area -->
+    <div id="game" style="display:none;">
+      <div id="question" class="question-box"></div>
+      <div id="options"></div>
+      <div id="explanation" class="explanation"></div>
+      <div class="score-bar">
+        <div id="avatarMini" style="display:inline-block;margin-right:10px;"></div>
+        Lives: <span id="lives">3</span> | XP: <span id="xp">0</span>
+      </div>
+    </div>
 
-function startGame(level) {
-  difficulty = level;
-  questions = shuffle(level === "easy" ? easy : level === "medium" ? medium : hard);
-  xpPerCorrect = level === "easy" ? 10 : level === "medium" ? 15 : 25;
-  lives = 3;
-  xp = 0;
-  current = 0;
-  document.getElementById("lives").textContent = lives;
-  document.getElementById("xp").textContent = xp;
-  document.getElementById("difficulty-select").style.display = "none";
-  document.getElementById("game").style.display = "block";
-  showQuestion();
-}
-function shuffle(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
-}
-function showQuestion() {
-  if (current >= questions.length || lives <= 0) return endGame();
-  const q = questions[current];
-  document.getElementById("question").textContent = q.question;
-  const optionsEl = document.getElementById("options");
-  optionsEl.innerHTML = '';
-  document.getElementById("explanation").textContent = '';
-  q.options.forEach(opt => {
-    const btn = document.createElement("div");
-    btn.className = "option";
-    btn.textContent = opt;
-    btn.onclick = () => checkAnswer(opt, btn, q.answer, q.explanation);
-    optionsEl.appendChild(btn);
-  });
-}
-function checkAnswer(selected, btn, correct, explanation) {
-  if (selected === correct) {
-    btn.classList.add("correct");
-    xp += xpPerCorrect;
-    document.getElementById("xp").textContent = xp;
-  } else {
-    btn.classList.add("incorrect");
-    lives--;
-    document.getElementById("lives").textContent = lives;
-  }
-  document.getElementById("explanation").textContent = explanation;
-  setTimeout(() => { current++; showQuestion(); }, 1600);
-}
-async function endGame() {
-  document.getElementById("game").style.display = "none";
-  document.getElementById("game-over").style.display = "block";
-  document.getElementById("final-xp").textContent = xp;
-  const name = prompt("Enter your name for the leaderboard:");
-  const avatar = localStorage.getItem("avatar") || "seeker";
-  if (name && currentUser) {
-    await db.collection("leaderboard").add({
-      uid: currentUser.uid,
-      name: name,
-      xp: xp,
-      difficulty: difficulty,
-      avatar: avatar,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-  }
-  showLeaderboard();
-}
-async function showLeaderboard() {
-  const snap = await db.collection("leaderboard")
-    .orderBy("xp", "desc")
-    .limit(5)
-    .get();
-  const leaderboardEl = document.getElementById("leaderboard");
-  leaderboardEl.innerHTML = "<h3>🏆 Top 5 Leaderboard</h3>";
-  snap.forEach(doc => {
-    const data = doc.data();
-    const avatar = data.avatar || "seeker";
-    leaderboardEl.innerHTML += `
-      <div style='display:flex;align-items:center;margin-bottom:0.5em;'>
-        <img src='avatars/${avatar}.png' style='width:32px;height:32px;border-radius:50%;margin-right:10px;'>
-        <span>${data.name} (${data.difficulty}): ${data.xp} XP</span>
-      </div>`;
-  });
-}
-window.onload = () => {
-  loadTheme();
-  const soundPref = localStorage.getItem("soundPack") || "classic";
-  loadSoundFiles(soundPref);
-  renderAvatar();
-  showIntro();
-};
-</script>
+    <!-- Game Over Section -->
+    <div id="game-over" style="display:none; margin-top: 2em;">
+      <h2>Game Over</h2>
+      <div id="avatarFinal" style="margin-bottom: 1em;"></div>
+      <p>Your final XP: <span id="final-xp">0</span></p>
+      <button onclick="location.reload()">Play Again</button>
+      <div id="leaderboard" style="margin-top: 2em;"></div>
+    </div>
+  </div>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAWT0pDA0Rqv9GI8wVgAOZKakpydjTI6z4",
+      authDomain: "faithquest-1a124.firebaseapp.com",
+      projectId: "faithquest-1a124"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    let currentUser = null;
+    auth.signInAnonymously().then(res => currentUser = res.user);
+
+    function loadTheme() {}
+    function renderAvatar() {
+      const avatar = localStorage.getItem("avatar") || "seeker";
+      document.getElementById("avatarMini").innerHTML =
+        `<img src='avatars/${avatar}.png' style='width:32px;height:32px;border-radius:50%;'>`;
+      document.getElementById("avatarFinal").innerHTML =
+        `<img src='avatars/${avatar}.png' style='width:48px;height:48px;border-radius:50%;'>`;
+    }
+    function showIntro() {
+      const avatar = localStorage.getItem("avatar") || "seeker";
+      const xp = parseInt(localStorage.getItem("totalXP") || '0');
+      const level = Math.floor(xp / 100) + 1;
+      document.getElementById("introAvatar").innerHTML = `<img src='avatars/${avatar}.png' style='width:64px;height:64px;border-radius:50%;'>`;
+      document.getElementById("introDetails").innerHTML = `<p><strong>Level ${level}</strong> ${avatar}</p><p>Total XP: ${xp}</p>`;
+      document.getElementById("difficulty-select").style.display = "none";
+      document.getElementById("introScreen").style.display = "block";
+    }
+    function proceedToDifficulty() {
+      document.getElementById("introScreen").style.display = "none";
+      document.getElementById("difficulty-select").style.display = "block";
+    }
+
+    const easy = [
+      {
+        question: "Where was Jesus born?",
+        options: ["Nazareth", "Bethlehem", "Jerusalem", "Capernaum"],
+        answer: "Bethlehem",
+        explanation: "Jesus was born in Bethlehem (Luke 2:4–7)."
+      },
+      {
+        question: "Who built an ark to survive a flood?",
+        options: ["Moses", "Noah", "Abraham", "David"],
+        answer: "Noah",
+        explanation: "God told Noah to build an ark (Genesis 6)."
+      },
+      {
+        question: "What is the first book of the Bible?",
+        options: ["Genesis", "Exodus", "Leviticus", "Matthew"],
+        answer: "Genesis",
+        explanation: "Genesis is the first book of the Bible."
+      }
+    ];
+
+    const medium = [
+      {
+        question: "Who betrayed Jesus for 30 silver coins?",
+        options: ["Peter", "Judas", "Thomas", "James"],
+        answer: "Judas",
+        explanation: "Judas Iscariot betrayed Jesus (Matthew 26:15)."
+      },
+      {
+        question: "How many days was Jesus in the wilderness?",
+        options: ["10", "20", "30", "40"],
+        answer: "40",
+        explanation: "Jesus fasted for 40 days (Matthew 4:2)."
+      },
+      {
+        question: "What did Jesus turn water into?",
+        options: ["Wine", "Oil", "Milk", "Honey"],
+        answer: "Wine",
+        explanation: "Jesus turned water into wine (John 2:1–11)."
+      }
+    ];
+
+    const hard = [
+      {
+        question: "Which king saw the writing on the wall?",
+        options: ["David", "Solomon", "Belshazzar", "Nebuchadnezzar"],
+        answer: "Belshazzar",
+        explanation: "The writing appeared during Belshazzar's feast (Daniel 5)."
+      },
+      {
+        question: "Which prophet saw a valley of dry bones?",
+        options: ["Jeremiah", "Ezekiel", "Isaiah", "Elijah"],
+        answer: "Ezekiel",
+        explanation: "Ezekiel had a vision of dry bones (Ezekiel 37)."
+      },
+      {
+        question: "How many people were saved on Noah's ark?",
+        options: ["2", "8", "12", "40"],
+        answer: "8",
+        explanation: "Noah, his wife, sons, and their wives (1 Peter 3:20)."
+      }
+    ];
+
+    let current = 0, lives = 3, xp = 0, xpPerCorrect = 10, difficulty = "easy", pool = [];
+
+    function startGame(level) {
+      difficulty = level;
+      pool = [...(level === "easy" ? easy : level === "medium" ? medium : hard)];
+      xpPerCorrect = level === "easy" ? 10 : level === "medium" ? 15 : 25;
+      current = 0; lives = 3; xp = 0;
+      document.getElementById("difficulty-select").style.display = "none";
+      document.getElementById("game").style.display = "block";
+      document.getElementById("lives").textContent = lives;
+      document.getElementById("xp").textContent = xp;
+      showQuestion();
+    }
+    function showQuestion() {
+      if (current >= pool.length || lives <= 0) return endGame();
+      const q = pool[current];
+      document.getElementById("question").textContent = q.question;
+      const optionsEl = document.getElementById("options");
+      optionsEl.innerHTML = '';
+      document.getElementById("explanation").textContent = '';
+      q.options.forEach(opt => {
+        const btn = document.createElement("div");
+        btn.className = "option";
+        btn.textContent = opt;
+        btn.onclick = () => checkAnswer(opt, btn, q.answer, q.explanation);
+        optionsEl.appendChild(btn);
+      });
+    }
+
+    function checkAnswer(selected, btn, correct, explanation) {
+      if (selected === correct) {
+        btn.classList.add("correct");
+        xp += xpPerCorrect;
+        document.getElementById("xp").textContent = xp;
+      } else {
+        btn.classList.add("incorrect");
+        lives--;
+        document.getElementById("lives").textContent = lives;
+      }
+      document.getElementById("explanation").textContent = explanation;
+      setTimeout(() => { current++; showQuestion(); }, 1600);
+    }
+
+    async function endGame() {
+      document.getElementById("game").style.display = "none";
+      document.getElementById("game-over").style.display = "block";
+      document.getElementById("final-xp").textContent = xp;
+
+      const avatar = localStorage.getItem("avatar") || "seeker";
+      const name = prompt("Enter your name for the leaderboard:");
+      if (name && currentUser) {
+        await db.collection("leaderboard").add({
+          uid: currentUser.uid,
+          name: name,
+          xp: xp,
+          difficulty: difficulty,
+          avatar: avatar,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+      showLeaderboard();
+    }
+
+    async function showLeaderboard() {
+      const snap = await db.collection("leaderboard")
+        .orderBy("xp", "desc")
+        .limit(5)
+        .get();
+
+      const leaderboardEl = document.getElementById("leaderboard");
+      leaderboardEl.innerHTML = "<h3>🏆 Top 5 Leaderboard</h3>";
+      snap.forEach(doc => {
+        const data = doc.data();
+        const avatar = data.avatar || "seeker";
+        leaderboardEl.innerHTML += `
+          <div style='display:flex;align-items:center;margin-bottom:0.5em;'>
+            <img src='avatars/${avatar}.png' style='width:32px;height:32px;border-radius:50%;margin-right:10px;'>
+            <span>${data.name} (${data.difficulty}): ${data.xp} XP</span>
+          </div>`;
+      });
+    }
+
+    window.onload = () => {
+      renderAvatar();
+      showIntro();
+    };
+  </script>
+</body>
+</html>
