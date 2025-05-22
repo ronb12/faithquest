@@ -24,7 +24,13 @@
       cursor: pointer;
     }
     .locked { color: #aaa; background: #f4f4f4; cursor: default; }
-    .question-box { background: #fff; padding: 2em; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 1em; }
+    .question-box {
+      background: #fff;
+      padding: 2em;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-top: 1em;
+    }
     .option {
       background: #f1f1f1;
       margin: 0.5em 0;
@@ -35,6 +41,18 @@
     .correct { background: #c8f7c5 !important; }
     .incorrect { background: #ffc2c2 !important; }
     .score-bar { margin-top: 1em; }
+    .exit-btn {
+      margin-top: 1em;
+      background: #ff4d4d;
+      color: white;
+      padding: 0.5em 1em;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .exit-btn:hover {
+      background: #cc0000;
+    }
   </style>
 </head>
 <body>
@@ -57,6 +75,7 @@
       <div class="score-bar">
         Lives: <span id="lives">3</span> | XP: <span id="xp">0</span>
       </div>
+      <button class="exit-btn" onclick="exitGame()">⏹ Exit Game</button>
     </div>
 
     <div id="game-over" style="display:none;">
@@ -66,6 +85,7 @@
     </div>
   </div>
 
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
@@ -163,6 +183,19 @@
       document.getElementById("final-xp").textContent = xp;
       const total = parseInt(localStorage.getItem("totalXP") || '0');
       localStorage.setItem("totalXP", total + xp);
+    }
+
+    function exitGame() {
+      document.getElementById("game").style.display = "none";
+      document.getElementById("journey").style.display = "block";
+      loadProfile();
+    }
+
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/faithquest/service-worker.js')
+        .then(() => console.log("✅ Service Worker registered"))
+        .catch(err => console.error("❌ Service Worker failed:", err));
     }
   </script>
 </body>
