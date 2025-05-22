@@ -2,82 +2,57 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>FaithQuest – Bible Trivia Game</title>
+  <title>FaithQuest – Bible Adventure</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4a90e2" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/style.css" />
   <style>
-    body {
-      font-family: 'Arial', sans-serif;
-      background: linear-gradient(to bottom, #f9f9f9, #e0eafc);
-      margin: 0; padding: 0; text-align: center;
-    }
-    .container { max-width: 600px; margin: auto; padding: 2em; }
-    .question-box {
+    body { margin: 0; font-family: Arial, sans-serif; background: #eef2fb; text-align: center; }
+    .map { padding: 2em; }
+    .map-stage {
       background: #fff;
+      margin: 1em auto;
+      max-width: 300px;
+      padding: 1.5em;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      padding: 2em;
-      margin-top: 1em;
-    }
-    .option {
-      background: #f1f1f1;
-      margin: 0.5em 0;
-      padding: 1em;
-      border-radius: 8px;
       cursor: pointer;
-      transition: background 0.3s;
     }
-    .option:hover { background: #d6f0ff; }
-    .correct { background: #c8f7c5 !important; }
-    .incorrect { background: #ffc2c2 !important; }
-    .score-bar { margin-top: 1em; font-size: 1.1em; }
-    .explanation { margin-top: 1em; font-style: italic; color: #555; }
+    .locked { opacity: 0.5; cursor: not-allowed; }
+    .stage-icon { width: 40px; vertical-align: middle; margin-right: 10px; }
+    .xp-bar { background: #ccc; border-radius: 10px; height: 12px; margin: 10px auto; max-width: 300px; }
+    .xp-fill { background: #4a90e2; height: 100%; width: 0%; border-radius: 10px; transition: width 0.5s; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Intro Screen -->
-    <div id="introScreen" style="text-align: center; padding: 2em;">
-      <h2>🎮 Welcome to FaithQuest</h2>
-      <div id="introAvatar" style="margin: 1em 0;"></div>
-      <div id="introDetails"></div>
-      <button onclick="proceedToDifficulty()">Start</button>
-    </div>
+  <div id="intro" class="map">
+    <h1>🌟 FaithQuest Journey</h1>
+    <div id="avatarBlock" style="margin: 1em;"></div>
+    <div class="xp-bar"><div id="xpFill" class="xp-fill"></div></div>
+    <div class="map-stage" onclick="startStage('bethlehem')">📍 Bethlehem (Unlocked)</div>
+    <div id="nazarethBtn" class="map-stage locked">📍 Nazareth (Locked)</div>
+    <div id="jerusalemBtn" class="map-stage locked">📍 Jerusalem (Locked)</div>
+  </div>
 
-    <!-- Difficulty Selection -->
-    <div id="difficulty-select" style="display:none;">
-      <p><strong>Select a difficulty:</strong></p>
-      <div>
-        <button onclick="startGame('easy')">🟢 Easy</button>
-        <button onclick="startGame('medium')">🟡 Medium</button>
-        <button onclick="startGame('hard')">🔴 Hard</button>
-      </div>
-    </div>
-
-    <!-- Main Game Area -->
-    <div id="game" style="display:none;">
-      <div id="question" class="question-box"></div>
-      <div id="options"></div>
-      <div id="explanation" class="explanation"></div>
-      <div class="score-bar">
-        <div id="avatarMini" style="display:inline-block;margin-right:10px;"></div>
-        Lives: <span id="lives">3</span> | XP: <span id="xp">0</span>
-      </div>
-    </div>
-
-    <!-- Game Over Section -->
-    <div id="game-over" style="display:none; margin-top: 2em;">
-      <h2>Game Over</h2>
-      <div id="avatarFinal" style="margin-bottom: 1em;"></div>
-      <p>Your final XP: <span id="final-xp">0</span></p>
-      <button onclick="location.reload()">Play Again</button>
-      <div id="leaderboard" style="margin-top: 2em;"></div>
+  <div id="gameScreen" style="display:none;">
+    <div id="stageTitle" style="font-size: 1.4em; margin-top: 1em;"></div>
+    <div id="questionBox" style="margin: 2em auto; max-width: 500px;"></div>
+    <div id="optionsBox"></div>
+    <div id="feedback" style="font-style: italic; margin-top: 1em;"></div>
+    <div class="score-bar" style="margin-top: 1em;">
+      Lives: <span id="lives">3</span> | XP: <span id="xp">0</span> | Streak: <span id="streak">0</span>
     </div>
   </div>
-  <!-- Firebase SDK -->
+
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAWT0pDA0Rqv9GI8wVgAOZKakpydjTI6z4",
@@ -90,177 +65,117 @@
     let currentUser = null;
     auth.signInAnonymously().then(res => currentUser = res.user);
 
-    function loadTheme() {}
+    const questions = {
+      bethlehem: [
+        { q: "Where was Jesus born?", a: "Bethlehem", options: ["Nazareth", "Bethlehem", "Jerusalem", "Capernaum"], e: "Jesus was born in Bethlehem (Luke 2:4–7)." },
+        { q: "Who visited baby Jesus with gifts?", a: "Wise Men", options: ["Shepherds", "Angels", "Wise Men", "Pharisees"], e: "The Wise Men brought gold, frankincense, and myrrh." }
+      ],
+      nazareth: [
+        { q: "Where did Jesus grow up?", a: "Nazareth", options: ["Bethlehem", "Jerusalem", "Nazareth", "Galilee"], e: "Jesus was raised in Nazareth." },
+        { q: "Who baptized Jesus?", a: "John the Baptist", options: ["Peter", "Moses", "John the Baptist", "Elijah"], e: "John baptized Jesus in the Jordan River." }
+      ],
+      jerusalem: [
+        { q: "Where was Jesus crucified?", a: "Jerusalem", options: ["Nazareth", "Bethlehem", "Galilee", "Jerusalem"], e: "Jesus was crucified outside Jerusalem." },
+        { q: "What happened on the third day?", a: "Resurrection", options: ["Ascension", "Burial", "Resurrection", "Sermon"], e: "Jesus rose again on the third day." }
+      ]
+    };
+
+    let currentStage = "", currentQ = 0, xp = 0, streak = 0, lives = 3;
+
+    function updateXPBar() {
+      const totalXP = parseInt(localStorage.getItem("totalXP") || "0");
+      document.getElementById("xpFill").style.width = Math.min((totalXP % 100) + "%", "100%");
+    }
+
     function renderAvatar() {
       const avatar = localStorage.getItem("avatar") || "seeker";
-      document.getElementById("avatarMini").innerHTML =
-        `<img src='avatars/${avatar}.png' style='width:32px;height:32px;border-radius:50%;'>`;
-      document.getElementById("avatarFinal").innerHTML =
-        `<img src='avatars/${avatar}.png' style='width:48px;height:48px;border-radius:50%;'>`;
-    }
-    function showIntro() {
-      const avatar = localStorage.getItem("avatar") || "seeker";
-      const xp = parseInt(localStorage.getItem("totalXP") || '0');
-      const level = Math.floor(xp / 100) + 1;
-      document.getElementById("introAvatar").innerHTML = `<img src='avatars/${avatar}.png' style='width:64px;height:64px;border-radius:50%;'>`;
-      document.getElementById("introDetails").innerHTML = `<p><strong>Level ${level}</strong> ${avatar}</p><p>Total XP: ${xp}</p>`;
-      document.getElementById("difficulty-select").style.display = "none";
-      document.getElementById("introScreen").style.display = "block";
-    }
-    function proceedToDifficulty() {
-      document.getElementById("introScreen").style.display = "none";
-      document.getElementById("difficulty-select").style.display = "block";
+      const totalXP = parseInt(localStorage.getItem("totalXP") || "0");
+      const level = Math.floor(totalXP / 100) + 1;
+      document.getElementById("avatarBlock").innerHTML = `
+        <img src="avatars/${avatar}.png" style="width:64px;height:64px;border-radius:50%;" />
+        <p>Level ${level} ${avatar}</p>`;
     }
 
-    const easy = [
-      {
-        question: "Where was Jesus born?",
-        options: ["Nazareth", "Bethlehem", "Jerusalem", "Capernaum"],
-        answer: "Bethlehem",
-        explanation: "Jesus was born in Bethlehem (Luke 2:4–7)."
-      },
-      {
-        question: "Who built an ark to survive a flood?",
-        options: ["Moses", "Noah", "Abraham", "David"],
-        answer: "Noah",
-        explanation: "God told Noah to build an ark (Genesis 6)."
-      },
-      {
-        question: "What is the first book of the Bible?",
-        options: ["Genesis", "Exodus", "Leviticus", "Matthew"],
-        answer: "Genesis",
-        explanation: "Genesis is the first book of the Bible."
-      }
-    ];
-
-    const medium = [
-      {
-        question: "Who betrayed Jesus for 30 silver coins?",
-        options: ["Peter", "Judas", "Thomas", "James"],
-        answer: "Judas",
-        explanation: "Judas Iscariot betrayed Jesus (Matthew 26:15)."
-      },
-      {
-        question: "How many days was Jesus in the wilderness?",
-        options: ["10", "20", "30", "40"],
-        answer: "40",
-        explanation: "Jesus fasted for 40 days (Matthew 4:2)."
-      },
-      {
-        question: "What did Jesus turn water into?",
-        options: ["Wine", "Oil", "Milk", "Honey"],
-        answer: "Wine",
-        explanation: "Jesus turned water into wine (John 2:1–11)."
-      }
-    ];
-
-    const hard = [
-      {
-        question: "Which king saw the writing on the wall?",
-        options: ["David", "Solomon", "Belshazzar", "Nebuchadnezzar"],
-        answer: "Belshazzar",
-        explanation: "The writing appeared during Belshazzar's feast (Daniel 5)."
-      },
-      {
-        question: "Which prophet saw a valley of dry bones?",
-        options: ["Jeremiah", "Ezekiel", "Isaiah", "Elijah"],
-        answer: "Ezekiel",
-        explanation: "Ezekiel had a vision of dry bones (Ezekiel 37)."
-      },
-      {
-        question: "How many people were saved on Noah's ark?",
-        options: ["2", "8", "12", "40"],
-        answer: "8",
-        explanation: "Noah, his wife, sons, and their wives (1 Peter 3:20)."
-      }
-    ];
-
-    let current = 0, lives = 3, xp = 0, xpPerCorrect = 10, difficulty = "easy", pool = [];
-
-    function startGame(level) {
-      difficulty = level;
-      pool = [...(level === "easy" ? easy : level === "medium" ? medium : hard)];
-      xpPerCorrect = level === "easy" ? 10 : level === "medium" ? 15 : 25;
-      current = 0; lives = 3; xp = 0;
-      document.getElementById("difficulty-select").style.display = "none";
-      document.getElementById("game").style.display = "block";
-      document.getElementById("lives").textContent = lives;
+    function startStage(stage) {
+      currentStage = stage;
+      currentQ = 0; lives = 3; streak = 0;
+      document.getElementById("intro").style.display = "none";
+      document.getElementById("gameScreen").style.display = "block";
+      document.getElementById("stageTitle").textContent = "📍 " + stage.charAt(0).toUpperCase() + stage.slice(1);
       document.getElementById("xp").textContent = xp;
+      document.getElementById("lives").textContent = lives;
+      document.getElementById("streak").textContent = streak;
       showQuestion();
     }
+
     function showQuestion() {
-      if (current >= pool.length || lives <= 0) return endGame();
-      const q = pool[current];
-      document.getElementById("question").textContent = q.question;
-      const optionsEl = document.getElementById("options");
-      optionsEl.innerHTML = '';
-      document.getElementById("explanation").textContent = '';
+      const q = questions[currentStage][currentQ];
+      if (!q) return completeStage();
+
+      document.getElementById("questionBox").textContent = q.q;
+      document.getElementById("optionsBox").innerHTML = '';
+      document.getElementById("feedback").textContent = '';
+
       q.options.forEach(opt => {
-        const btn = document.createElement("div");
-        btn.className = "option";
+        const btn = document.createElement("button");
         btn.textContent = opt;
-        btn.onclick = () => checkAnswer(opt, btn, q.answer, q.explanation);
-        optionsEl.appendChild(btn);
+        btn.onclick = () => checkAnswer(opt, q.a, q.e);
+        btn.style.margin = "0.5em"; btn.style.padding = "1em"; btn.style.borderRadius = "8px";
+        document.getElementById("optionsBox").appendChild(btn);
       });
     }
 
-    function checkAnswer(selected, btn, correct, explanation) {
+    function checkAnswer(selected, correct, explanation) {
+      const feedback = document.getElementById("feedback");
       if (selected === correct) {
-        btn.classList.add("correct");
-        xp += xpPerCorrect;
-        document.getElementById("xp").textContent = xp;
+        streak++; xp += 10;
+        feedback.textContent = "✅ Correct! " + explanation;
       } else {
-        btn.classList.add("incorrect");
-        lives--;
-        document.getElementById("lives").textContent = lives;
+        streak = 0; lives--;
+        feedback.textContent = "❌ Incorrect. " + explanation;
       }
-      document.getElementById("explanation").textContent = explanation;
-      setTimeout(() => { current++; showQuestion(); }, 1600);
+      document.getElementById("xp").textContent = xp;
+      document.getElementById("lives").textContent = lives;
+      document.getElementById("streak").textContent = streak;
+
+      if (lives <= 0) return gameOver();
+
+      currentQ++;
+      setTimeout(showQuestion, 1500);
     }
 
-    async function endGame() {
-      document.getElementById("game").style.display = "none";
-      document.getElementById("game-over").style.display = "block";
-      document.getElementById("final-xp").textContent = xp;
+    function completeStage() {
+      document.getElementById("gameScreen").style.display = "none";
+      document.getElementById("intro").style.display = "block";
 
-      const avatar = localStorage.getItem("avatar") || "seeker";
-      const name = prompt("Enter your name for the leaderboard:");
-      if (name && currentUser) {
-        await db.collection("leaderboard").add({
-          uid: currentUser.uid,
-          name: name,
-          xp: xp,
-          difficulty: difficulty,
-          avatar: avatar,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      }
-      showLeaderboard();
+      const totalXP = parseInt(localStorage.getItem("totalXP") || "0") + xp;
+      localStorage.setItem("totalXP", totalXP);
+      updateXPBar(); renderAvatar();
+
+      if (currentStage === "bethlehem") document.getElementById("nazarethBtn").classList.remove("locked");
+      if (currentStage === "nazareth") document.getElementById("jerusalemBtn").classList.remove("locked");
+
+      alert("🎉 Stage Completed! XP gained: " + xp);
     }
 
-    async function showLeaderboard() {
-      const snap = await db.collection("leaderboard")
-        .orderBy("xp", "desc")
-        .limit(5)
-        .get();
-
-      const leaderboardEl = document.getElementById("leaderboard");
-      leaderboardEl.innerHTML = "<h3>🏆 Top 5 Leaderboard</h3>";
-      snap.forEach(doc => {
-        const data = doc.data();
-        const avatar = data.avatar || "seeker";
-        leaderboardEl.innerHTML += `
-          <div style='display:flex;align-items:center;margin-bottom:0.5em;'>
-            <img src='avatars/${avatar}.png' style='width:32px;height:32px;border-radius:50%;margin-right:10px;'>
-            <span>${data.name} (${data.difficulty}): ${data.xp} XP</span>
-          </div>`;
-      });
+    function gameOver() {
+      alert("🛑 Game Over! You ran out of lives.");
+      document.getElementById("gameScreen").style.display = "none";
+      document.getElementById("intro").style.display = "block";
     }
 
     window.onload = () => {
+      updateXPBar();
       renderAvatar();
-      showIntro();
     };
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log("✅ SW registered"))
+        .catch(err => console.error("❌ SW error", err));
+    }
   </script>
 </body>
 </html>
