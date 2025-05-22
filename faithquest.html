@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FaithQuest – Bible Trivia Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(to bottom, #f9f9f9, #e0eafc);
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 2em;
+    }
+    h1 {
+      color: #3b3b3b;
+      margin-bottom: 0.5em;
+    }
+    .question-box {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 2em;
+      margin-top: 1em;
+    }
+    .option {
+      background: #f1f1f1;
+      margin: 0.5em 0;
+      padding: 1em;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .option:hover {
+      background: #d6f0ff;
+    }
+    .score-bar {
+      margin-top: 1em;
+      font-size: 1.1em;
+    }
+    .correct {
+      background: #c8f7c5 !important;
+    }
+    .incorrect {
+      background: #ffc2c2 !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🙏 FaithQuest</h1>
+    <div id="game">
+      <div id="question" class="question-box"></div>
+      <div id="options"></div>
+      <div class="score-bar">
+        Lives: <span id="lives">3</span> | XP: <span id="xp">0</span>
+      </div>
+    </div>
+    <div id="game-over" style="display:none; margin-top: 2em;">
+      <h2>Game Over</h2>
+      <p>Your final XP: <span id="final-xp">0</span></p>
+      <button onclick="startGame()">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        question: "Who was swallowed by a great fish?",
+        options: ["Moses", "Noah", "Jonah", "David"],
+        answer: "Jonah"
+      },
+      {
+        question: "What is the first book of the Bible?",
+        options: ["Exodus", "Genesis", "Matthew", "Psalms"],
+        answer: "Genesis"
+      },
+      {
+        question: "How many days did God take to create the world?",
+        options: ["3", "6", "7", "40"],
+        answer: "6"
+      },
+      {
+        question: "Who betrayed Jesus?",
+        options: ["Peter", "Judas", "Paul", "Thomas"],
+        answer: "Judas"
+      }
+    ];
+
+    let current = 0;
+    let lives = 3;
+    let xp = 0;
+
+    function startGame() {
+      lives = 3;
+      xp = 0;
+      current = 0;
+      document.getElementById("lives").textContent = lives;
+      document.getElementById("xp").textContent = xp;
+      document.getElementById("game").style.display = "block";
+      document.getElementById("game-over").style.display = "none";
+      showQuestion();
+    }
+
+    function showQuestion() {
+      if (current >= questions.length || lives <= 0) {
+        return endGame();
+      }
+
+      const q = questions[current];
+      document.getElementById("question").textContent = q.question;
+      const optionsEl = document.getElementById("options");
+      optionsEl.innerHTML = '';
+
+      q.options.forEach(opt => {
+        const btn = document.createElement("div");
+        btn.className = "option";
+        btn.textContent = opt;
+        btn.onclick = () => checkAnswer(opt, btn);
+        optionsEl.appendChild(btn);
+      });
+    }
+
+    function checkAnswer(selected, btn) {
+      const correct = questions[current].answer;
+      if (selected === correct) {
+        btn.classList.add("correct");
+        xp += 10;
+        document.getElementById("xp").textContent = xp;
+        setTimeout(() => {
+          current++;
+          showQuestion();
+        }, 1000);
+      } else {
+        btn.classList.add("incorrect");
+        lives--;
+        document.getElementById("lives").textContent = lives;
+        setTimeout(() => {
+          current++;
+          showQuestion();
+        }, 1000);
+      }
+    }
+
+    function endGame() {
+      document.getElementById("game").style.display = "none";
+      document.getElementById("game-over").style.display = "block";
+      document.getElementById("final-xp").textContent = xp;
+    }
+
+    // Start on load
+    window.onload = startGame;
+  </script>
+</body>
+</html>
