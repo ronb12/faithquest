@@ -1,272 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>FaithQuest – Bible Trivia Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    body {
-      font-family: 'Arial', sans-serif;
-      background: linear-gradient(to bottom, #f9f9f9, #e0eafc);
-      margin: 0;
-      padding: 0;
-      text-align: center;
+<!-- Achievements Section -->
+<div id="achievements" style="display:none; margin-top: 2em; font-size: 0.95em; color: #333;">
+  <h3>🏅 Achievements Unlocked</h3>
+  <ul id="achievementList"></ul>
+</div>
+
+<script>
+  function checkAchievements() {
+    const achievements = [];
+    const xp = parseInt(localStorage.getItem('totalXP') || '0');
+    const streak = parseInt(localStorage.getItem('streakCount') || '0');
+    const games = parseInt(localStorage.getItem('gamesPlayed') || '0');
+
+    if (xp >= 100) achievements.push("💡 100 XP Earned");
+    if (games >= 10) achievements.push("🎮 Played 10 Games");
+    if (streak >= 3) achievements.push("🔥 3-Day Streak");
+    if (xp >= 250) achievements.push("⚡ XP Master (250+) ");
+
+    const list = document.getElementById("achievementList");
+    list.innerHTML = "";
+    achievements.forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      list.appendChild(li);
+    });
+
+    if (achievements.length > 0) {
+      document.getElementById("achievements").style.display = "block";
     }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 2em;
-    }
-    h1 {
-      color: #3b3b3b;
-      margin-bottom: 1em;
-    }
-    .question-box {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      padding: 2em;
-      margin-top: 1em;
-    }
-    .option {
-      background: #f1f1f1;
-      margin: 0.5em 0;
-      padding: 1em;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    .option:hover {
-      background: #d6f0ff;
-    }
-    .score-bar {
-      margin-top: 1em;
-      font-size: 1.1em;
-    }
-    .correct {
-      background: #c8f7c5 !important;
-    }
-    .incorrect {
-      background: #ffc2c2 !important;
-    }
-    .explanation {
-      margin-top: 1em;
-      font-style: italic;
-      color: #555;
-    }
-    .difficulty-buttons button {
-      margin: 0.5em;
-      padding: 0.6em 1.2em;
-      font-size: 1em;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .easy { background-color: #c8f7c5; }
-    .medium { background-color: #f7e3a0; }
-    .hard { background-color: #f7a0a0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>🙏 FaithQuest</h1>
-    <div id="difficulty-select">
-      <p><strong>Select a difficulty:</strong></p>
-      <div class="difficulty-buttons">
-        <button class="easy" onclick="startGame('easy')">🟢 Easy</button>
-        <button class="medium" onclick="startGame('medium')">🟡 Medium</button>
-        <button class="hard" onclick="startGame('hard')">🔴 Hard</button>
-      </div>
-    </div>
+  }
 
-    <div id="game" style="display:none;">
-      <div id="question" class="question-box"></div>
-      <div id="options"></div>
-      <div id="explanation" class="explanation"></div>
-      <div class="score-bar">
-        Lives: <span id="lives">3</span> | XP: <span id="xp">0</span>
-      </div>
-    </div>
-
-    <div id="game-over" style="display:none; margin-top: 2em;">
-      <h2>Game Over</h2>
-      <p>Your final XP: <span id="final-xp">0</span></p>
-      <button onclick="location.reload()">Play Again</button>
-      <div id="leaderboard" style="margin-top: 2em;"></div>
-    </div>
-  </div>
-
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAWT0pDA0Rqv9GI8wVgAOZKakpydjTI6z4",
-      authDomain: "faithquest-1a124.firebaseapp.com",
-      projectId: "faithquest-1a124",
-      storageBucket: "faithquest-1a124.appspot.com",
-      messagingSenderId: "680483549913",
-      appId: "1:680483549913:web:e8b89d00d7add3540284c8",
-      measurementId: "G-0SJG0VLZC3"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const auth = firebase.auth();
-    let currentUser = null;
-    auth.signInAnonymously().then(res => currentUser = res.user);
-
-    const easy = [
-      {
-        question: "Where was Jesus born?",
-        options: ["Nazareth", "Bethlehem", "Jerusalem", "Capernaum"],
-        answer: "Bethlehem",
-        explanation: "Jesus was born in Bethlehem to fulfill prophecy (Micah 5:2)."
-      },
-      {
-        question: "Who built the ark?",
-        options: ["Moses", "Noah", "David", "Abraham"],
-        answer: "Noah",
-        explanation: "God told Noah to build the ark before the flood (Genesis 6)."
-      }
-    ];
-    const medium = [
-      {
-        question: "Who was swallowed by a great fish?",
-        options: ["Isaiah", "Jonah", "Ezekiel", "Jeremiah"],
-        answer: "Jonah",
-        explanation: "Jonah ran from God's call and was swallowed by a fish (Jonah 1:17)."
-      },
-      {
-        question: "What did Jesus turn water into?",
-        options: ["Honey", "Milk", "Wine", "Oil"],
-        answer: "Wine",
-        explanation: "Jesus turned water to wine in Cana (John 2)."
-      }
-    ];
-    const hard = [
-      {
-        question: "Which king saw the writing on the wall?",
-        options: ["Saul", "Solomon", "Belshazzar", "Nebuchadnezzar"],
-        answer: "Belshazzar",
-        explanation: "Daniel interpreted the writing on the wall (Daniel 5)."
-      },
-      {
-        question: "Which prophet saw a valley of dry bones?",
-        options: ["Jeremiah", "Hosea", "Ezekiel", "Isaiah"],
-        answer: "Ezekiel",
-        explanation: "Ezekiel saw the dry bones come to life (Ezekiel 37)."
-      }
-    ];
-
-    function shuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-      return array;
-    }
-
-    let current = 0;
-    let lives = 3;
-    let xp = 0;
-    let difficulty = "easy";
-    let pool = [];
-    let xpPerCorrect = 10;
-
-    function startGame(level) {
-      difficulty = level;
-      if (level === "easy") {
-        pool = shuffle([...easy]);
-        xpPerCorrect = 10;
-      } else if (level === "medium") {
-        pool = shuffle([...medium]);
-        xpPerCorrect = 15;
-      } else {
-        pool = shuffle([...hard]);
-        xpPerCorrect = 25;
-      }
-
-      lives = 3;
-      xp = 0;
-      current = 0;
-
-      document.getElementById("difficulty-select").style.display = "none";
-      document.getElementById("game").style.display = "block";
-      document.getElementById("lives").textContent = lives;
-      document.getElementById("xp").textContent = xp;
-      showQuestion();
-    }
-
-    function showQuestion() {
-      if (current >= pool.length || lives <= 0) return endGame();
-
-      const q = pool[current];
-      document.getElementById("question").textContent = q.question;
-      const optionsEl = document.getElementById("options");
-      optionsEl.innerHTML = '';
-      document.getElementById("explanation").textContent = '';
-
-      q.options.forEach(opt => {
-        const btn = document.createElement("div");
-        btn.className = "option";
-        btn.textContent = opt;
-        btn.onclick = () => checkAnswer(opt, btn, q.answer, q.explanation);
-        optionsEl.appendChild(btn);
-      });
-    }
-
-    function checkAnswer(selected, btn, correct, explanation) {
-      if (selected === correct) {
-        btn.classList.add("correct");
-        xp += xpPerCorrect;
-        document.getElementById("xp").textContent = xp;
-      } else {
-        btn.classList.add("incorrect");
-        lives--;
-        document.getElementById("lives").textContent = lives;
-      }
-      document.getElementById("explanation").textContent = explanation;
-
-      setTimeout(() => {
-        current++;
-        showQuestion();
-      }, 1800);
-    }
-
-    async function endGame() {
-      document.getElementById("game").style.display = "none";
-      document.getElementById("game-over").style.display = "block";
-      document.getElementById("final-xp").textContent = xp;
-
-      const name = prompt("Enter your name for the leaderboard:");
-      if (name && currentUser) {
-        await db.collection("leaderboard").add({
-          uid: currentUser.uid,
-          name: name,
-          xp: xp,
-          difficulty: difficulty,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      }
-
-      showLeaderboard();
-    }
-
-    async function showLeaderboard() {
-      const snap = await db.collection("leaderboard")
-        .orderBy("xp", "desc")
-        .limit(5)
-        .get();
-
-      const leaderboardEl = document.getElementById("leaderboard");
-      leaderboardEl.innerHTML = "<h3>🏆 Top 5 Leaderboard</h3>";
-      snap.forEach(doc => {
-        const data = doc.data();
-        leaderboardEl.innerHTML += `<p>${data.name} (${data.difficulty}): ${data.xp} XP</p>`;
-      });
-    }
-  </script>
-</body>
-</html>
+  window.onload = () => {
+    showVerse();
+    displayProgress();
+    checkAchievements();
+  };
+</script>
