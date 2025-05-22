@@ -2,64 +2,54 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <title>FaithQuest</title>
   <link rel="manifest" href="manifest.json" />
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
+      margin: 0; padding: 0;
       background: #eef3ff;
       color: #333;
       text-align: center;
     }
     .navbar {
       display: flex;
-      background: #4a6cf7;
-      color: white;
-      padding: 0.5em;
       justify-content: space-around;
+      background: #4a90e2;
+      color: white;
+      padding: 1em 0;
     }
     .navbar button {
       background: transparent;
       border: none;
-      color: white;
       font-size: 1em;
+      color: white;
       cursor: pointer;
-      font-weight: bold;
     }
-    .navbar .active {
+    .navbar button.active {
+      font-weight: bold;
       text-decoration: underline;
     }
-    .tab-content {
-      display: none;
-      padding: 1.5em;
-    }
-    .tab-content.active {
-      display: block;
-    }
+    .container { max-width: 600px; margin: auto; padding: 2em; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
     .level-card {
       background: #fff;
-      margin: 1em auto;
+      margin: 1em 0;
       padding: 1em;
       border-radius: 12px;
-      max-width: 400px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       cursor: pointer;
     }
-    .locked {
-      color: #aaa;
-      background: #f4f4f4;
-      cursor: default;
-    }
-    .question-box, .mission-box {
+    .locked { color: #aaa; background: #f4f4f4; cursor: default; }
+    .question-box {
       background: #fff;
       padding: 2em;
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      margin: 1em auto;
-      max-width: 500px;
+      margin-top: 1em;
     }
     .option {
       background: #f1f1f1;
@@ -71,206 +61,185 @@
     .correct { background: #c8f7c5 !important; }
     .incorrect { background: #ffc2c2 !important; }
     .score-bar { margin-top: 1em; }
-    .verse-box {
-      background: #fff;
-      margin: 1em auto;
-      padding: 1em;
-      border-left: 4px solid #4a6cf7;
-      max-width: 500px;
-      font-style: italic;
-    }
   </style>
 </head>
 <body>
   <div class="navbar">
-    <button id="btn-journey" onclick="showTab('journey')">🌍 Journey</button>
+    <button id="btn-journey" onclick="showTab('journey')" class="active">🧭 Journey</button>
     <button id="btn-leaderboard" onclick="showTab('leaderboard')">🏆 Leaderboard</button>
     <button id="btn-study" onclick="showTab('study')">📖 Study</button>
     <button id="btn-missions" onclick="showTab('missions')">🔥 Missions</button>
   </div>
 
-  <div id="tab-journey" class="tab-content active">
-    <h2>🌟 FaithQuest Journey</h2>
-    <div id="avatar"></div>
-    <p id="levelInfo"></p>
-    <div id="xpBar" style="background:#ccc;height:8px;width:80%;margin:auto;border-radius:4px;">
-      <div id="xpProgress" style="height:8px;background:#5c8df6;width:0%"></div>
+  <div class="container">
+    <div id="tab-journey" class="tab-content active">
+      <h1>🌟 FaithQuest Journey</h1>
+      <div id="avatar"></div>
+      <p id="levelInfo"></p>
+      <div id="xpBar" style="background:#ccc;height:8px;width:80%;margin:auto;border-radius:4px;overflow:hidden;">
+        <div id="xpProgress" style="height:8px;background:#5c8df6;width:0%"></div>
+      </div>
+      <div class="level-card" onclick="startLevel('bethlehem')" id="card-bethlehem">🔹 Bethlehem (Unlocked)</div>
+      <div class="level-card locked" id="card-nazareth">🔹 Nazareth (Locked)</div>
+      <div class="level-card locked" id="card-jerusalem">🔹 Jerusalem (Locked)</div>
     </div>
-    <div class="level-card" onclick="startLevel('bethlehem')" id="card-bethlehem">🔹 Bethlehem (Unlocked)</div>
-    <div class="level-card locked" id="card-nazareth">🔹 Nazareth (Locked)</div>
-    <div class="level-card locked" id="card-jerusalem">🔹 Jerusalem (Locked)</div>
-  </div>
 
-  <div id="tab-leaderboard" class="tab-content">
-    <h2>🏆 Top Players</h2>
-    <div id="leaderboard"></div>
-  </div>
-
-  <div id="tab-study" class="tab-content">
-    <h2>📖 Study Verses</h2>
-    <div class="verse-box">"For God so loved the world..." – John 3:16</div>
-    <div class="verse-box">"The Lord is my shepherd..." – Psalm 23:1</div>
-  </div>
-
-  <div id="tab-missions" class="tab-content">
-    <h2>🔥 Daily Missions</h2>
-    <div class="mission-box">✅ Answer 3 questions correctly today!</div>
-    <div class="mission-box">📘 Memorize 1 verse</div>
-  </div>
-  <!-- Game Screen -->
-  <div id="game" style="display:none;">
-    <div id="question" class="question-box"></div>
-    <div id="options"></div>
-    <div class="score-bar">
-      Lives: <span id="lives">3</span> | XP: <span id="xp">0</span>
+    <div id="tab-leaderboard" class="tab-content">
+      <h2>🏆 Top Players</h2>
+      <div id="leaderboard"></div>
     </div>
-    <button onclick="exitGame()" style="margin-top: 1em; background:#ff6666;color:white;border:none;padding:0.6em 1.2em;border-radius:8px;">⏹ Exit Game</button>
+
+    <div id="tab-study" class="tab-content">
+      <h2>📖 Study Mode</h2>
+      <p>Verse explanations and deeper learning coming soon!</p>
+    </div>
+
+    <div id="tab-missions" class="tab-content">
+      <h2>🔥 Daily Missions</h2>
+      <p>Complete missions to earn bonus XP and badges!</p>
+    </div>
+
+    <div id="game" style="display:none;">
+      <div id="question" class="question-box"></div>
+      <div id="options"></div>
+      <div class="score-bar">
+        Lives: <span id="lives">3</span> | XP: <span id="xp">0</span>
+      </div>
+      <button onclick="exitGame()">⏹ Exit Game</button>
+    </div>
+
+    <div id="game-over" style="display:none;">
+      <h2>Game Over</h2>
+      <p>Your final XP: <span id="final-xp">0</span></p>
+      <button onclick="location.reload()">Play Again</button>
+    </div>
   </div>
 
-  <div id="game-over" style="display:none;">
-    <h2>Game Over</h2>
-    <p>Your final XP: <span id="final-xp">0</span></p>
-    <button onclick="location.reload()">🔁 Play Again</button>
-  </div>
-</div>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAWT0pDA0Rqv9GI8wVgAOZKakpydjTI6z4",
+      authDomain: "faithquest-1a124.firebaseapp.com",
+      projectId: "faithquest-1a124"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    let currentUser = null;
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAWT0pDA0Rqv9GI8wVgAOZKakpydjTI6z4",
-    authDomain: "faithquest-1a124.firebaseapp.com",
-    projectId: "faithquest-1a124"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  const auth = firebase.auth();
-  let currentUser = null;
-
-  auth.signInAnonymously().then(res => {
-    currentUser = res.user;
-    loadProfile();
-    loadLeaderboard();
-  });
-
-  function showTab(tab) {
-    document.querySelectorAll(".tab-content").forEach(div => div.classList.remove("active"));
-    document.querySelector(`#tab-${tab}`).classList.add("active");
-    document.querySelectorAll(".navbar button").forEach(btn => btn.classList.remove("active"));
-    document.querySelector(`#btn-${tab}`).classList.add("active");
-  }
-
-  const xpPerCorrect = 10;
-  let current = 0, lives = 3, xp = 0;
-  let pool = [];
-
-  const levels = {
-    bethlehem: [
-      { q: "Where was Jesus born?", o: ["Nazareth", "Bethlehem", "Jerusalem", "Capernaum"], a: "Bethlehem" },
-      { q: "Who visited Jesus with gifts?", o: ["Shepherds", "Wise Men", "Soldiers", "Angels"], a: "Wise Men" }
-    ],
-    nazareth: [
-      { q: "Who baptized Jesus?", o: ["Paul", "John", "Peter", "David"], a: "John" },
-      { q: "What was Jesus' first miracle?", o: ["Healing", "Walking on water", "Water to wine", "Feeding 5,000"], a: "Water to wine" }
-    ],
-    jerusalem: [
-      { q: "Where was Jesus crucified?", o: ["Nazareth", "Bethlehem", "Golgotha", "Rome"], a: "Golgotha" },
-      { q: "Who denied Jesus three times?", o: ["John", "Peter", "James", "Thomas"], a: "Peter" }
-    ]
-  };
-
-  function loadProfile() {
-    const avatar = localStorage.getItem("avatar") || "seeker";
-    const totalXP = parseInt(localStorage.getItem("totalXP") || '0');
-    const level = Math.floor(totalXP / 100) + 1;
-    document.getElementById("avatar").innerHTML = `<img src="avatars/${avatar}.png" style="width:64px;border-radius:50%;">`;
-    document.getElementById("levelInfo").textContent = `Level ${level} ${avatar}`;
-    document.getElementById("xpProgress").style.width = `${totalXP % 100}%`;
-    if (totalXP >= 30) document.getElementById("card-nazareth").classList.remove("locked");
-    if (totalXP >= 60) document.getElementById("card-jerusalem").classList.remove("locked");
-  }
-
-  function startLevel(level) {
-    if (document.getElementById("card-" + level).classList.contains("locked")) return;
-    pool = [...levels[level]];
-    current = 0;
-    lives = 3;
-    xp = 0;
-    document.getElementById("journey").style.display = "none";
-    document.getElementById("game").style.display = "block";
-    document.getElementById("lives").textContent = lives;
-    document.getElementById("xp").textContent = xp;
-    showQuestion();
-  }
-
-  function showQuestion() {
-    if (current >= pool.length || lives <= 0) return endGame();
-    const q = pool[current];
-    document.getElementById("question").textContent = q.q;
-    const optBox = document.getElementById("options");
-    optBox.innerHTML = "";
-    q.o.forEach(opt => {
-      const btn = document.createElement("div");
-      btn.className = "option";
-      btn.textContent = opt;
-      btn.onclick = () => checkAnswer(opt, q.a, btn);
-      optBox.appendChild(btn);
+    auth.signInAnonymously().then(res => {
+      currentUser = res.user;
+      loadProfile();
     });
-  }
 
-  function checkAnswer(selected, correct, btn) {
-    if (selected === correct) {
-      btn.classList.add("correct");
-      xp += xpPerCorrect;
-    } else {
-      btn.classList.add("incorrect");
-      lives--;
+    const xpPerCorrect = 10;
+    let currentLevel = "bethlehem", current = 0, lives = 3, xp = 0;
+    let pool = [];
+
+    const levels = {
+      bethlehem: [
+        { q: "Where was Jesus born?", o: ["Nazareth", "Bethlehem", "Jerusalem", "Capernaum"], a: "Bethlehem" },
+        { q: "Who visited Jesus with gifts?", o: ["Shepherds", "Wise Men", "Soldiers", "Angels"], a: "Wise Men" }
+      ],
+      nazareth: [
+        { q: "Who baptized Jesus?", o: ["Paul", "John", "Peter", "David"], a: "John" },
+        { q: "What was Jesus' first miracle?", o: ["Healing", "Walking on water", "Water to wine", "Feeding 5,000"], a: "Water to wine" }
+      ],
+      jerusalem: [
+        { q: "Where was Jesus crucified?", o: ["Nazareth", "Bethlehem", "Golgotha", "Rome"], a: "Golgotha" },
+        { q: "Who denied Jesus three times?", o: ["John", "Peter", "James", "Thomas"], a: "Peter" }
+      ]
+    };
+
+    function showTab(tab) {
+      document.querySelectorAll(".tab-content").forEach(div => div.classList.remove("active"));
+      const content = document.querySelector(`#tab-${tab}`);
+      if (content) content.classList.add("active");
+
+      document.querySelectorAll(".navbar button").forEach(btn => btn.classList.remove("active"));
+      const tabBtn = document.querySelector(`#btn-${tab}`);
+      if (tabBtn) tabBtn.classList.add("active");
     }
-    document.getElementById("lives").textContent = lives;
-    document.getElementById("xp").textContent = xp;
-    setTimeout(() => { current++; showQuestion(); }, 1200);
-  }
 
-  function endGame() {
-    document.getElementById("game").style.display = "none";
-    document.getElementById("game-over").style.display = "block";
-    document.getElementById("final-xp").textContent = xp;
-    const total = parseInt(localStorage.getItem("totalXP") || '0');
-    localStorage.setItem("totalXP", total + xp);
-  }
+    function loadProfile() {
+      const avatar = localStorage.getItem("avatar") || "seeker";
+      const totalXP = parseInt(localStorage.getItem("totalXP") || '0');
+      const level = Math.floor(totalXP / 100) + 1;
+      document.getElementById("avatar").innerHTML = `<img src='avatars/${avatar}.png' style='width:64px;border-radius:50%;'>`;
+      document.getElementById("levelInfo").textContent = `Level ${level} ${avatar}`;
+      document.getElementById("xpProgress").style.width = `${totalXP % 100}%`;
+      if (totalXP >= 30) document.getElementById("card-nazareth").classList.remove("locked");
+      if (totalXP >= 60) document.getElementById("card-jerusalem").classList.remove("locked");
+    }
 
-  function exitGame() {
-    document.getElementById("game").style.display = "none";
-    document.getElementById("journey").style.display = "block";
-    loadProfile();
-  }
+    function startLevel(level) {
+      if (document.getElementById("card-" + level).classList.contains("locked")) return;
+      currentLevel = level;
+      pool = [...levels[level]];
+      current = 0;
+      lives = 3;
+      xp = 0;
+      document.getElementById("journey").style.display = "none";
+      document.getElementById("game").style.display = "block";
+      document.getElementById("lives").textContent = lives;
+      document.getElementById("xp").textContent = xp;
+      showQuestion();
+    }
 
-  async function loadLeaderboard() {
-    const snap = await db.collection("leaderboard")
-      .orderBy("xp", "desc")
-      .limit(5)
-      .get();
-    const el = document.getElementById("leaderboard");
-    el.innerHTML = "";
-    snap.forEach(doc => {
-      const d = doc.data();
-      el.innerHTML += `<p>${d.name || 'Anonymous'} – ${d.xp} XP (${d.difficulty || 'easy'})</p>`;
-    });
-  }
+    function showQuestion() {
+      if (current >= pool.length || lives <= 0) return endGame();
+      const q = pool[current];
+      document.getElementById("question").textContent = q.q;
+      const optBox = document.getElementById("options");
+      optBox.innerHTML = "";
+      q.o.forEach(opt => {
+        const btn = document.createElement("div");
+        btn.className = "option";
+        btn.textContent = opt;
+        btn.onclick = () => checkAnswer(opt, q.a, btn);
+        optBox.appendChild(btn);
+      });
+    }
 
-  // Register PWA Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js')
-      .then(() => console.log("✅ Service Worker Registered"))
-      .catch(err => console.error("❌ SW registration failed:", err));
-  }
+    function checkAnswer(selected, correct, btn) {
+      if (selected === correct) {
+        btn.classList.add("correct");
+        xp += xpPerCorrect;
+      } else {
+        btn.classList.add("incorrect");
+        lives--;
+      }
+      document.getElementById("lives").textContent = lives;
+      document.getElementById("xp").textContent = xp;
+      setTimeout(() => { current++; showQuestion(); }, 1200);
+    }
 
-  // Load home screen by default
-  window.onload = () => {
-    showTab('journey');
-  };
-</script>
+    function endGame() {
+      document.getElementById("game").style.display = "none";
+      document.getElementById("game-over").style.display = "block";
+      document.getElementById("final-xp").textContent = xp;
+      const total = parseInt(localStorage.getItem("totalXP") || '0');
+      localStorage.setItem("totalXP", total + xp);
+    }
+
+    function exitGame() {
+      document.getElementById("game").style.display = "none";
+      document.getElementById("journey").style.display = "block";
+      loadProfile();
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/faithquest/service-worker.js')
+        .then(() => console.log("✅ Service Worker registered"))
+        .catch(err => console.error("❌ Service Worker failed:", err));
+    }
+
+    window.onload = () => {
+      loadProfile();
+      showTab('journey');
+    };
+  </script>
 </body>
 </html>
