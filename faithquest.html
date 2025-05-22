@@ -13,13 +13,13 @@
       text-align: center;
     }
     .container {
-      max-width: 500px;
+      max-width: 600px;
       margin: 0 auto;
       padding: 2em;
     }
     h1 {
       color: #3b3b3b;
-      margin-bottom: 0.5em;
+      margin-bottom: 1em;
     }
     .question-box {
       background: #fff;
@@ -54,12 +54,32 @@
       font-style: italic;
       color: #555;
     }
+    .difficulty-buttons button {
+      margin: 0.5em;
+      padding: 0.6em 1.2em;
+      font-size: 1em;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .easy { background-color: #c8f7c5; }
+    .medium { background-color: #f7e3a0; }
+    .hard { background-color: #f7a0a0; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🙏 FaithQuest</h1>
-    <div id="game">
+    <div id="difficulty-select">
+      <p><strong>Select a difficulty:</strong></p>
+      <div class="difficulty-buttons">
+        <button class="easy" onclick="startGame('easy')">🟢 Easy</button>
+        <button class="medium" onclick="startGame('medium')">🟡 Medium</button>
+        <button class="hard" onclick="startGame('hard')">🔴 Hard</button>
+      </div>
+    </div>
+
+    <div id="game" style="display:none;">
       <div id="question" class="question-box"></div>
       <div id="options"></div>
       <div id="explanation" class="explanation"></div>
@@ -67,10 +87,11 @@
         Lives: <span id="lives">3</span> | XP: <span id="xp">0</span>
       </div>
     </div>
+
     <div id="game-over" style="display:none; margin-top: 2em;">
       <h2>Game Over</h2>
       <p>Your final XP: <span id="final-xp">0</span></p>
-      <button onclick="startGame()">Play Again</button>
+      <button onclick="location.reload()">Play Again</button>
       <div id="leaderboard" style="margin-top: 2em;"></div>
     </div>
   </div>
@@ -94,47 +115,48 @@
     const db = firebase.firestore();
     const auth = firebase.auth();
     let currentUser = null;
+    auth.signInAnonymously().then(res => currentUser = res.user);
 
-    auth.signInAnonymously().then(res => {
-      currentUser = res.user;
-    });
-
-    const questions = [
-      {
-        question: "Who was swallowed by a great fish?",
-        options: ["Isaiah", "Jonah", "Ezekiel", "Jeremiah"],
-        answer: "Jonah",
-        explanation: "Jonah disobeyed God and was swallowed by a great fish for three days (Jonah 1:17)."
-      },
+    const easy = [
       {
         question: "Where was Jesus born?",
         options: ["Nazareth", "Bethlehem", "Jerusalem", "Capernaum"],
         answer: "Bethlehem",
-        explanation: "Jesus was born in Bethlehem to fulfill the prophecy of Micah 5:2."
-      },
-      {
-        question: "What is the last book of the Bible?",
-        options: ["Hebrews", "Jude", "Revelation", "Acts"],
-        answer: "Revelation",
-        explanation: "The Book of Revelation describes the end times and Christ’s return."
-      },
-      {
-        question: "What did Jesus turn water into?",
-        options: ["Honey", "Milk", "Wine", "Oil"],
-        answer: "Wine",
-        explanation: "Jesus performed His first miracle at a wedding in Cana (John 2:1-11)."
+        explanation: "Jesus was born in Bethlehem to fulfill prophecy (Micah 5:2)."
       },
       {
         question: "Who built the ark?",
         options: ["Moses", "Noah", "David", "Abraham"],
         answer: "Noah",
-        explanation: "God instructed Noah to build an ark to save his family and animals from the flood (Genesis 6)."
+        explanation: "God told Noah to build the ark before the flood (Genesis 6)."
+      }
+    ];
+    const medium = [
+      {
+        question: "Who was swallowed by a great fish?",
+        options: ["Isaiah", "Jonah", "Ezekiel", "Jeremiah"],
+        answer: "Jonah",
+        explanation: "Jonah ran from God's call and was swallowed by a fish (Jonah 1:17)."
       },
       {
-        question: "Who led the Israelites out of Egypt?",
-        options: ["Joseph", "David", "Moses", "Aaron"],
-        answer: "Moses",
-        explanation: "God chose Moses to lead the Israelites out of slavery in Egypt (Exodus 3)."
+        question: "What did Jesus turn water into?",
+        options: ["Honey", "Milk", "Wine", "Oil"],
+        answer: "Wine",
+        explanation: "Jesus turned water to wine in Cana (John 2)."
+      }
+    ];
+    const hard = [
+      {
+        question: "Which king saw the writing on the wall?",
+        options: ["Saul", "Solomon", "Belshazzar", "Nebuchadnezzar"],
+        answer: "Belshazzar",
+        explanation: "Daniel interpreted the writing on the wall (Daniel 5)."
+      },
+      {
+        question: "Which prophet saw a valley of dry bones?",
+        options: ["Jeremiah", "Hosea", "Ezekiel", "Isaiah"],
+        answer: "Ezekiel",
+        explanation: "Ezekiel saw the dry bones come to life (Ezekiel 37)."
       }
     ];
 
@@ -146,29 +168,41 @@
       return array;
     }
 
-    let shuffled = [];
     let current = 0;
     let lives = 3;
     let xp = 0;
+    let difficulty = "easy";
+    let pool = [];
+    let xpPerCorrect = 10;
 
-    function startGame() {
-      shuffled = shuffle([...questions]);
+    function startGame(level) {
+      difficulty = level;
+      if (level === "easy") {
+        pool = shuffle([...easy]);
+        xpPerCorrect = 10;
+      } else if (level === "medium") {
+        pool = shuffle([...medium]);
+        xpPerCorrect = 15;
+      } else {
+        pool = shuffle([...hard]);
+        xpPerCorrect = 25;
+      }
+
       lives = 3;
       xp = 0;
       current = 0;
+
+      document.getElementById("difficulty-select").style.display = "none";
+      document.getElementById("game").style.display = "block";
       document.getElementById("lives").textContent = lives;
       document.getElementById("xp").textContent = xp;
-      document.getElementById("game").style.display = "block";
-      document.getElementById("game-over").style.display = "none";
-      document.getElementById("leaderboard").innerHTML = '';
-      document.getElementById("explanation").textContent = '';
       showQuestion();
     }
 
     function showQuestion() {
-      if (current >= shuffled.length || lives <= 0) return endGame();
+      if (current >= pool.length || lives <= 0) return endGame();
 
-      const q = shuffled[current];
+      const q = pool[current];
       document.getElementById("question").textContent = q.question;
       const optionsEl = document.getElementById("options");
       optionsEl.innerHTML = '';
@@ -178,17 +212,15 @@
         const btn = document.createElement("div");
         btn.className = "option";
         btn.textContent = opt;
-        btn.onclick = () => checkAnswer(opt, btn);
+        btn.onclick = () => checkAnswer(opt, btn, q.answer, q.explanation);
         optionsEl.appendChild(btn);
       });
     }
 
-    function checkAnswer(selected, btn) {
-      const correct = shuffled[current].answer;
-      const explanation = shuffled[current].explanation || "";
+    function checkAnswer(selected, btn, correct, explanation) {
       if (selected === correct) {
         btn.classList.add("correct");
-        xp += 10;
+        xp += xpPerCorrect;
         document.getElementById("xp").textContent = xp;
       } else {
         btn.classList.add("incorrect");
@@ -214,6 +246,7 @@
           uid: currentUser.uid,
           name: name,
           xp: xp,
+          difficulty: difficulty,
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
       }
@@ -231,11 +264,9 @@
       leaderboardEl.innerHTML = "<h3>🏆 Top 5 Leaderboard</h3>";
       snap.forEach(doc => {
         const data = doc.data();
-        leaderboardEl.innerHTML += `<p>${data.name}: ${data.xp} XP</p>`;
+        leaderboardEl.innerHTML += `<p>${data.name} (${data.difficulty}): ${data.xp} XP</p>`;
       });
     }
-
-    window.onload = startGame;
   </script>
 </body>
 </html>
