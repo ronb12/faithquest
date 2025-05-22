@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FaithQuest – Daily Challenge</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: #f1f5f8;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 2em;
+    }
+    h1 {
+      margin-bottom: 0.5em;
+    }
+    .question-box {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 1.5em;
+      margin-top: 1em;
+    }
+    .option {
+      background: #eaeaea;
+      margin: 0.5em 0;
+      padding: 1em;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .option:hover {
+      background: #c6e6ff;
+    }
+    .correct {
+      background: #b8f5ba !important;
+    }
+    .incorrect {
+      background: #f7b8b8 !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📅 FaithQuest: Daily Challenge</h1>
+    <div id="game">
+      <div id="question" class="question-box"></div>
+      <div id="options"></div>
+      <p>Bonus XP: <span id="bonus">0</span></p>
+    </div>
+    <div id="complete" style="display:none; margin-top: 2em;">
+      <h2>✅ Challenge Complete</h2>
+      <p>You earned <span id="earned">0</span> XP today!</p>
+      <button onclick="location.href='index.html'">Back to Home</button>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAWT0pDA0Rqv9GI8wVgAOZKakpydjTI6z4",
+      authDomain: "faithquest-1a124.firebaseapp.com",
+      projectId: "faithquest-1a124"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    let user = null;
+
+    auth.signInAnonymously().then(res => {
+      user = res.user;
+      checkIfPlayedToday();
+    });
+
+    const today = new Date().toISOString().slice(0, 10); // e.g. "2025-05-22"
+    const dailyQuestions = {
+      "2025-05-22": [
+        { q: "Where was Jesus born?", o: ["Jerusalem", "Nazareth", "Bethlehem", "Galilee"], a: "Bethlehem" },
+        { q: "What did Moses part?", o: ["The Red Sea", "The Jordan River", "The Nile", "The Dead Sea"], a: "The Red Sea" },
+        { q: "Who wrote many Psalms?", o: ["Solomon", "David", "Samuel", "Elijah"], a: "David" },
+        { q: "What is the last book of the Bible?", o: ["Genesis", "Matthew", "Revelation", "Romans"], a: "Revelation" },
+        { q: "Who denied Jesus 3 times?", o: ["John", "Paul", "Judas", "Peter"], a: "Peter" }
+      ]
+      // Add more dates and sets here
+    };
+
+    let qIndex = 0;
+    let xp = 0;
+
+    function checkIfPlayedToday() {
+      db.collection("daily")
+        .doc(user.uid)
+        .get()
+        .then(doc => {
+          if (doc.exists && doc.data().date === today) {
+            document.getElementById("game").style.display = "none";
+            document.getElementById("complete").style.display = "block";
+            document.getElementById("earned").textContent = doc.data().xp;
+          } else {
+            showQuestion();
+          }
+        });
+    }
+
+    function showQuestion() {
+      const set = dailyQuestions[today];
+      if (!set || qIndex >= set.length) return finish();
+
+      const q = set[qIndex];
+      document.getElementById("question").textContent = q.q;
+      const options = document.getElementById("options");
+      options.innerHTML = '';
+
+      q.o.forEach(opt => {
+        const btn = document.createElement("div");
+        btn.className = "option";
+        btn.textContent = opt;
+        btn.onclick = () => checkAnswer(opt, q.a, btn);
+        options.appendChild(btn);
+      });
+    }
+
+    function checkAnswer(selected, answer, btn) {
+      if (selected === answer) {
+        btn.classList.add("correct");
+        xp += 10;
+        document.getElementById("bonus").textContent = xp;
+      } else {
+        btn.classList.add("incorrect");
+      }
+
+      setTimeout(() => {
+        qIndex++;
+        showQuestion();
+      }, 800);
+    }
+
+    function finish() {
+      db.collection("daily").doc(user.uid).set({
+        date: today,
+        xp: xp,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      document.getElementById("game").style.display = "none";
+      document.getElementById("complete").style.display = "block";
+      document.getElementById("earned").textContent = xp;
+    }
+  </script>
+</body>
+</html>
