@@ -2,51 +2,64 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <meta name="mobile-web-app-capable" content="yes">
   <title>FaithQuest</title>
   <link rel="manifest" href="manifest.json" />
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 0; padding: 0;
+      margin: 0;
       background: #eef3ff;
       color: #333;
       text-align: center;
     }
-    .container { max-width: 600px; margin: auto; padding: 2em; }
-    .nav {
+    .navbar {
       display: flex;
-      justify-content: space-around;
-      background: #5c8df6;
+      background: #4a6cf7;
       color: white;
-      padding: 0.8em 0;
+      padding: 0.5em;
+      justify-content: space-around;
     }
-    .nav button {
-      background: none;
+    .navbar button {
+      background: transparent;
       border: none;
       color: white;
-      font-weight: bold;
       font-size: 1em;
       cursor: pointer;
+      font-weight: bold;
+    }
+    .navbar .active {
+      text-decoration: underline;
+    }
+    .tab-content {
+      display: none;
+      padding: 1.5em;
+    }
+    .tab-content.active {
+      display: block;
     }
     .level-card {
       background: #fff;
-      margin: 0.5em 0;
+      margin: 1em auto;
       padding: 1em;
       border-radius: 12px;
+      max-width: 400px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       cursor: pointer;
     }
-    .level-card.locked {
-      opacity: 0.5;
-      pointer-events: none;
+    .locked {
+      color: #aaa;
+      background: #f4f4f4;
+      cursor: default;
     }
-    .question-box {
-      background: #fff; padding: 2em;
+    .question-box, .mission-box {
+      background: #fff;
+      padding: 2em;
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      margin-top: 1em;
+      margin: 1em auto;
+      max-width: 500px;
     }
     .option {
       background: #f1f1f1;
@@ -58,302 +71,205 @@
     .correct { background: #c8f7c5 !important; }
     .incorrect { background: #ffc2c2 !important; }
     .score-bar { margin-top: 1em; }
-    .exit-btn {
-      margin-top: 1em;
-      background: #ff4d4d;
-      color: white;
-      padding: 0.5em 1em;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .exit-btn:hover { background: #cc0000; }
-
-    .badge-popup {
-      position: fixed;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
+    .verse-box {
       background: #fff;
-      color: #333;
-      padding: 1em 2em;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      animation: popfade 3s ease-in-out;
-      z-index: 9999;
-    }
-    @keyframes popfade {
-      0% { opacity: 0; transform: translateX(-50%) scale(0.9); }
-      10% { opacity: 1; transform: translateX(-50%) scale(1.05); }
-      100% { opacity: 0; transform: translateX(-50%) scale(0.95); }
-    }
-
-    .study-card {
-      background: white;
+      margin: 1em auto;
       padding: 1em;
-      border-radius: 10px;
-      margin: 1em 0;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    }
-
-    #verseModal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-    }
-    #verseModalContent {
-      background: white;
-      color: black;
-      padding: 2em;
-      border-radius: 12px;
-      max-width: 90%;
-      text-align: center;
-    }
-
-    /* 🔥 STAGE 5: Daily Missions + Power-Ups + Streaks */
-    #missions { display: none; }
-    .mission-card, .powerup-card, .streak-display {
-      background: white;
-      padding: 1em;
-      margin: 1em 0;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .powerup-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 1em;
-    }
-    .powerup {
-      background: #f3f3f3;
-      padding: 0.8em;
-      border-radius: 10px;
-      font-size: 0.9em;
-    }
-    .powerup.used {
-      background: #ffe6e6;
-      text-decoration: line-through;
+      border-left: 4px solid #4a6cf7;
+      max-width: 500px;
+      font-style: italic;
     }
   </style>
 </head>
 <body>
-  <div class="nav">
-    <button onclick="showTab('journey')">🗺️ Journey</button>
-    <button onclick="showTab('leaderboard')">🏆 Leaderboard</button>
-    <button onclick="showTab('study')">📖 Study</button>
-    <button onclick="showTab('missions')">🔥 Missions</button>
+  <div class="navbar">
+    <button id="btn-journey" onclick="showTab('journey')">🌍 Journey</button>
+    <button id="btn-leaderboard" onclick="showTab('leaderboard')">🏆 Leaderboard</button>
+    <button id="btn-study" onclick="showTab('study')">📖 Study</button>
+    <button id="btn-missions" onclick="showTab('missions')">🔥 Missions</button>
   </div>
 
-  <div class="container">
-    <!-- ✅ Missions Tab (Stage 5) -->
-    <div id="missions">
-      <h2>🔥 Daily Missions & Power-Ups</h2>
-
-      <div class="mission-card">
-        <h4>🎯 Daily Mission</h4>
-        <p id="dailyMissionText">Loading mission...</p>
-        <p><strong>Status:</strong> <span id="dailyMissionStatus">Not started</span></p>
-        <button onclick="markMissionComplete()">✅ Mark Complete</button>
-      </div>
-
-      <div class="powerup-card">
-        <h4>⚡ Power-Ups</h4>
-        <div class="powerup-grid" id="powerupList">
-          <!-- Power-ups will be loaded here -->
-        </div>
-      </div>
-
-      <div class="streak-display">
-        <h4>📆 XP Streak</h4>
-        <p>You’ve played <strong><span id="streakCount">0</span></strong> days in a row!</p>
-        <small>+2 XP bonus each day you return</small>
-      </div>
+  <div id="tab-journey" class="tab-content active">
+    <h2>🌟 FaithQuest Journey</h2>
+    <div id="avatar"></div>
+    <p id="levelInfo"></p>
+    <div id="xpBar" style="background:#ccc;height:8px;width:80%;margin:auto;border-radius:4px;">
+      <div id="xpProgress" style="height:8px;background:#5c8df6;width:0%"></div>
     </div>
+    <div class="level-card" onclick="startLevel('bethlehem')" id="card-bethlehem">🔹 Bethlehem (Unlocked)</div>
+    <div class="level-card locked" id="card-nazareth">🔹 Nazareth (Locked)</div>
+    <div class="level-card locked" id="card-jerusalem">🔹 Jerusalem (Locked)</div>
+  </div>
+
+  <div id="tab-leaderboard" class="tab-content">
+    <h2>🏆 Top Players</h2>
+    <div id="leaderboard"></div>
+  </div>
+
+  <div id="tab-study" class="tab-content">
+    <h2>📖 Study Verses</h2>
+    <div class="verse-box">"For God so loved the world..." – John 3:16</div>
+    <div class="verse-box">"The Lord is my shepherd..." – Psalm 23:1</div>
+  </div>
+
+  <div id="tab-missions" class="tab-content">
+    <h2>🔥 Daily Missions</h2>
+    <div class="mission-box">✅ Answer 3 questions correctly today!</div>
+    <div class="mission-box">📘 Memorize 1 verse</div>
+  </div>
+  <!-- Game Screen -->
+  <div id="game" style="display:none;">
+    <div id="question" class="question-box"></div>
+    <div id="options"></div>
+    <div class="score-bar">
+      Lives: <span id="lives">3</span> | XP: <span id="xp">0</span>
+    </div>
+    <button onclick="exitGame()" style="margin-top: 1em; background:#ff6666;color:white;border:none;padding:0.6em 1.2em;border-radius:8px;">⏹ Exit Game</button>
+  </div>
+
+  <div id="game-over" style="display:none;">
+    <h2>Game Over</h2>
+    <p>Your final XP: <span id="final-xp">0</span></p>
+    <button onclick="location.reload()">🔁 Play Again</button>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 <script>
-  // ---- STAGE 5: Missions, Power-Ups, Streaks ---- //
+  const firebaseConfig = {
+    apiKey: "AIzaSyAWT0pDA0Rqv9GI8wVgAOZKakpydjTI6z4",
+    authDomain: "faithquest-1a124.firebaseapp.com",
+    projectId: "faithquest-1a124"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+  let currentUser = null;
 
-  const missionKey = "fq_mission";
-  const streakKey = "fq_streak";
-  const streakDateKey = "fq_lastPlayed";
-  const powerupKey = "fq_powerups";
+  auth.signInAnonymously().then(res => {
+    currentUser = res.user;
+    loadProfile();
+    loadLeaderboard();
+  });
 
-  const missions = [
-    "Answer 5 questions correctly",
-    "Complete 1 Bible Study card",
-    "Reach 30 XP in any game",
-    "Login two days in a row"
-  ];
-
-  const powerups = [
-    { key: "secondChance", label: "❤️ Second Chance" },
-    { key: "skip", label: "⏭ Skip Question" },
-    { key: "hint", label: "💡 Hint (remove 2 wrong answers)" }
-  ];
-
-  function loadDailyMission() {
-    const today = new Date().toLocaleDateString();
-    const stored = JSON.parse(localStorage.getItem(missionKey)) || {};
-    if (stored.date !== today) {
-      const randomMission = missions[Math.floor(Math.random() * missions.length)];
-      localStorage.setItem(missionKey, JSON.stringify({ date: today, text: randomMission, complete: false }));
-      updateStreak();
-    }
-    updateMissionUI();
+  function showTab(tab) {
+    document.querySelectorAll(".tab-content").forEach(div => div.classList.remove("active"));
+    document.querySelector(`#tab-${tab}`).classList.add("active");
+    document.querySelectorAll(".navbar button").forEach(btn => btn.classList.remove("active"));
+    document.querySelector(`#btn-${tab}`).classList.add("active");
   }
 
-  function updateMissionUI() {
-    const m = JSON.parse(localStorage.getItem(missionKey));
-    if (m) {
-      document.getElementById("dailyMissionText").textContent = m.text;
-      document.getElementById("dailyMissionStatus").textContent = m.complete ? "✅ Complete" : "⏳ In Progress";
-    }
+  const xpPerCorrect = 10;
+  let current = 0, lives = 3, xp = 0;
+  let pool = [];
+
+  const levels = {
+    bethlehem: [
+      { q: "Where was Jesus born?", o: ["Nazareth", "Bethlehem", "Jerusalem", "Capernaum"], a: "Bethlehem" },
+      { q: "Who visited Jesus with gifts?", o: ["Shepherds", "Wise Men", "Soldiers", "Angels"], a: "Wise Men" }
+    ],
+    nazareth: [
+      { q: "Who baptized Jesus?", o: ["Paul", "John", "Peter", "David"], a: "John" },
+      { q: "What was Jesus' first miracle?", o: ["Healing", "Walking on water", "Water to wine", "Feeding 5,000"], a: "Water to wine" }
+    ],
+    jerusalem: [
+      { q: "Where was Jesus crucified?", o: ["Nazareth", "Bethlehem", "Golgotha", "Rome"], a: "Golgotha" },
+      { q: "Who denied Jesus three times?", o: ["John", "Peter", "James", "Thomas"], a: "Peter" }
+    ]
+  };
+
+  function loadProfile() {
+    const avatar = localStorage.getItem("avatar") || "seeker";
+    const totalXP = parseInt(localStorage.getItem("totalXP") || '0');
+    const level = Math.floor(totalXP / 100) + 1;
+    document.getElementById("avatar").innerHTML = `<img src="avatars/${avatar}.png" style="width:64px;border-radius:50%;">`;
+    document.getElementById("levelInfo").textContent = `Level ${level} ${avatar}`;
+    document.getElementById("xpProgress").style.width = `${totalXP % 100}%`;
+    if (totalXP >= 30) document.getElementById("card-nazareth").classList.remove("locked");
+    if (totalXP >= 60) document.getElementById("card-jerusalem").classList.remove("locked");
   }
 
-  function markMissionComplete() {
-    const m = JSON.parse(localStorage.getItem(missionKey));
-    if (m && !m.complete) {
-      m.complete = true;
-      localStorage.setItem(missionKey, JSON.stringify(m));
-      alert("🎉 Mission complete! +10 XP");
-      const total = parseInt(localStorage.getItem("totalXP") || "0");
-      localStorage.setItem("totalXP", total + 10);
-      updateMissionUI();
-      loadProfile();
-    }
+  function startLevel(level) {
+    if (document.getElementById("card-" + level).classList.contains("locked")) return;
+    pool = [...levels[level]];
+    current = 0;
+    lives = 3;
+    xp = 0;
+    document.getElementById("journey").style.display = "none";
+    document.getElementById("game").style.display = "block";
+    document.getElementById("lives").textContent = lives;
+    document.getElementById("xp").textContent = xp;
+    showQuestion();
   }
 
-  function updateStreak() {
-    const today = new Date().toLocaleDateString();
-    const last = localStorage.getItem(streakDateKey);
-    let count = parseInt(localStorage.getItem(streakKey) || "0");
-
-    if (!last) {
-      localStorage.setItem(streakDateKey, today);
-      localStorage.setItem(streakKey, "1");
-      count = 1;
-    } else if (last !== today) {
-      const lastDate = new Date(last);
-      const now = new Date();
-      const diff = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
-
-      if (diff === 1) {
-        count++;
-        const currentXP = parseInt(localStorage.getItem("totalXP") || "0");
-        localStorage.setItem("totalXP", currentXP + 2); // streak XP
-      } else {
-        count = 1; // streak resets
-      }
-
-      localStorage.setItem(streakDateKey, today);
-      localStorage.setItem(streakKey, count);
-    }
-
-    document.getElementById("streakCount").textContent = count;
-  }
-
-  function loadPowerups() {
-    let userPowerups = JSON.parse(localStorage.getItem(powerupKey) || "{}");
-    const list = document.getElementById("powerupList");
-    list.innerHTML = "";
-
-    powerups.forEach(p => {
-      const div = document.createElement("div");
-      div.className = "powerup" + (userPowerups[p.key] ? "" : " used");
-      div.textContent = p.label + (userPowerups[p.key] ? "" : " (used)");
-      list.appendChild(div);
+  function showQuestion() {
+    if (current >= pool.length || lives <= 0) return endGame();
+    const q = pool[current];
+    document.getElementById("question").textContent = q.q;
+    const optBox = document.getElementById("options");
+    optBox.innerHTML = "";
+    q.o.forEach(opt => {
+      const btn = document.createElement("div");
+      btn.className = "option";
+      btn.textContent = opt;
+      btn.onclick = () => checkAnswer(opt, q.a, btn);
+      optBox.appendChild(btn);
     });
   }
 
-  function grantPowerup(key) {
-    let powerups = JSON.parse(localStorage.getItem(powerupKey) || "{}");
-    powerups[key] = true;
-    localStorage.setItem(powerupKey, JSON.stringify(powerups));
+  function checkAnswer(selected, correct, btn) {
+    if (selected === correct) {
+      btn.classList.add("correct");
+      xp += xpPerCorrect;
+    } else {
+      btn.classList.add("incorrect");
+      lives--;
+    }
+    document.getElementById("lives").textContent = lives;
+    document.getElementById("xp").textContent = xp;
+    setTimeout(() => { current++; showQuestion(); }, 1200);
   }
 
-  function consumePowerup(key) {
-    let powerups = JSON.parse(localStorage.getItem(powerupKey) || "{}");
-    powerups[key] = false;
-    localStorage.setItem(powerupKey, JSON.stringify(powerups));
-  }
-
-  function showTab(id) {
-    ['journey', 'leaderboard', 'study', 'missions'].forEach(tab => {
-      document.getElementById(tab).style.display = (tab === id) ? 'block' : 'none';
-    });
-    if (id === 'missions') {
-      loadDailyMission();
-      loadPowerups();
-    }
-  }
-</script>
-<script>
-  // Award power-ups based on XP milestones
-  function rewardPowerups() {
-    const totalXP = parseInt(localStorage.getItem("totalXP") || "0");
-    const p = JSON.parse(localStorage.getItem(powerupKey) || "{}");
-
-    if (totalXP >= 50 && !p.secondChance) {
-      grantPowerup("secondChance");
-      alert("🎁 New Power-Up: ❤️ Second Chance unlocked!");
-    }
-    if (totalXP >= 75 && !p.skip) {
-      grantPowerup("skip");
-      alert("🎁 New Power-Up: ⏭ Skip Question unlocked!");
-    }
-    if (totalXP >= 100 && !p.hint) {
-      grantPowerup("hint");
-      alert("🎁 New Power-Up: 💡 Hint unlocked!");
-    }
-  }
-
-  // Modified endGame with reward check
   function endGame() {
     document.getElementById("game").style.display = "none";
     document.getElementById("game-over").style.display = "block";
     document.getElementById("final-xp").textContent = xp;
-    const total = parseInt(localStorage.getItem("totalXP") || "0") + xp;
-    localStorage.setItem("totalXP", total);
-    checkBadges();
-    saveLeaderboardScore(total);
+    const total = parseInt(localStorage.getItem("totalXP") || '0');
+    localStorage.setItem("totalXP", total + xp);
+  }
+
+  function exitGame() {
+    document.getElementById("game").style.display = "none";
+    document.getElementById("journey").style.display = "block";
     loadProfile();
-    renderBadges();
-    rewardPowerups(); // Stage 5
   }
 
-  // Profile + streak sync
-  function loadProfile() {
-    const totalXP = getTotalXP();
-    const level = Math.floor(totalXP / 100) + 1;
-    const { image, title } = getAvatarByLevel(level);
-    document.getElementById("avatar").innerHTML = `
-      <img src='avatars/${image}.png' style='width:64px;border-radius:50%;'><p>Level ${level} – ${title}</p>`;
-    document.getElementById("xpProgress").style.width = `${totalXP % 100}%`;
-
-    if (totalXP >= 30) document.getElementById("card-nazareth").classList.remove("locked");
-    if (totalXP >= 60) document.getElementById("card-galilee").classList.remove("locked");
-    if (totalXP >= 90) document.getElementById("card-jerusalem").classList.remove("locked");
-    if (totalXP >= 120) document.getElementById("card-mount").classList.remove("locked");
-
-    document.getElementById("streakCount").textContent = localStorage.getItem(streakKey) || "0";
+  async function loadLeaderboard() {
+    const snap = await db.collection("leaderboard")
+      .orderBy("xp", "desc")
+      .limit(5)
+      .get();
+    const el = document.getElementById("leaderboard");
+    el.innerHTML = "";
+    snap.forEach(doc => {
+      const d = doc.data();
+      el.innerHTML += `<p>${d.name || 'Anonymous'} – ${d.xp} XP (${d.difficulty || 'easy'})</p>`;
+    });
   }
 
-  // Register Service Worker
+  // Register PWA Service Worker
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/faithquest/service-worker.js')
-      .then(() => console.log("✅ Service Worker registered"))
-      .catch(err => console.error("❌ Service Worker failed:", err));
+    navigator.serviceWorker.register('service-worker.js')
+      .then(() => console.log("✅ Service Worker Registered"))
+      .catch(err => console.error("❌ SW registration failed:", err));
   }
 
+  // Load home screen by default
   window.onload = () => {
-    showTab("journey");
-    loadDailyMission();
-    loadPowerups();
-    updateStreak();
+    showTab('journey');
   };
 </script>
 </body>
