@@ -1,37 +1,42 @@
-<!-- Achievements Section -->
-<div id="achievements" style="display:none; margin-top: 2em; font-size: 0.95em; color: #333;">
-  <h3>🏅 Achievements Unlocked</h3>
-  <ul id="achievementList"></ul>
+<!-- Intro Screen Before Game Starts -->
+<div id="introScreen" style="text-align: center; padding: 2em;">
+  <h2>🎮 Welcome to FaithQuest</h2>
+  <div id="introAvatar" style="margin: 1em 0;"></div>
+  <div id="introDetails"></div>
+  <button onclick="proceedToDifficulty()" style="margin-top: 1em; padding: 0.5em 1.2em; font-size: 1em;">Start</button>
 </div>
 
 <script>
-  function checkAchievements() {
-    const achievements = [];
-    const xp = parseInt(localStorage.getItem('totalXP') || '0');
-    const streak = parseInt(localStorage.getItem('streakCount') || '0');
-    const games = parseInt(localStorage.getItem('gamesPlayed') || '0');
+  function showIntro() {
+    const avatar = localStorage.getItem("avatar") || "seeker";
+    const xp = parseInt(localStorage.getItem("totalXP") || '0');
+    const level = Math.floor(xp / 100) + 1;
 
-    if (xp >= 100) achievements.push("💡 100 XP Earned");
-    if (games >= 10) achievements.push("🎮 Played 10 Games");
-    if (streak >= 3) achievements.push("🔥 3-Day Streak");
-    if (xp >= 250) achievements.push("⚡ XP Master (250+) ");
+    document.getElementById("introAvatar").innerHTML = `<img src='avatars/${avatar}.png' style='width:64px;height:64px;border-radius:50%;'>`;
+    document.getElementById("introDetails").innerHTML = `<p><strong>Level ${level}</strong> ${capitalize(avatar)}</p><p>Total XP: ${xp}</p>`;
 
-    const list = document.getElementById("achievementList");
-    list.innerHTML = "";
-    achievements.forEach(item => {
-      const li = document.createElement("li");
-      li.textContent = item;
-      list.appendChild(li);
-    });
+    document.getElementById("difficulty-select").style.display = "none";
+    document.getElementById("introScreen").style.display = "block";
+  }
 
-    if (achievements.length > 0) {
-      document.getElementById("achievements").style.display = "block";
-    }
+  function proceedToDifficulty() {
+    document.getElementById("introScreen").style.display = "none";
+    document.getElementById("difficulty-select").style.display = "block";
+  }
+
+  function capitalize(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1);
   }
 
   window.onload = () => {
-    showVerse();
+    loadTheme();
+    const soundPref = localStorage.getItem("soundPack") || "classic";
+    document.getElementById("soundPack").value = soundPref;
+    loadSoundFiles(soundPref);
     displayProgress();
+    updateLevelDisplay();
     checkAchievements();
+    renderAvatar();
+    showIntro();
   };
 </script>
