@@ -1,10 +1,10 @@
 const CACHE_NAME = "faithquest-cache-v1";
 const urlsToCache = [
-  "/",
-  "/faithquest.html",
-  "/manifest.json",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png"
+  "/faithquest/",
+  "/faithquest/faithquest.html",
+  "/faithquest/manifest.json",
+  "/faithquest/icons/icon-192.png",
+  "/faithquest/icons/icon-512.png"
 ];
 
 // Install Service Worker
