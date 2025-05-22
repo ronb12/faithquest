@@ -49,6 +49,11 @@
     .incorrect {
       background: #ffc2c2 !important;
     }
+    .explanation {
+      margin-top: 1em;
+      font-style: italic;
+      color: #555;
+    }
   </style>
 </head>
 <body>
@@ -57,6 +62,7 @@
     <div id="game">
       <div id="question" class="question-box"></div>
       <div id="options"></div>
+      <div id="explanation" class="explanation"></div>
       <div class="score-bar">
         Lives: <span id="lives">3</span> | XP: <span id="xp">0</span>
       </div>
@@ -91,32 +97,58 @@
 
     const questions = [
       {
+        question: "Who built the ark?",
+        options: ["Moses", "Noah", "David", "Abraham"],
+        answer: "Noah",
+        explanation: "God told Noah to build the ark to save his family and animals from the flood."
+      },
+      {
+        question: "Where was Jesus born?",
+        options: ["Nazareth", "Bethlehem", "Jerusalem", "Capernaum"],
+        answer: "Bethlehem",
+        explanation: "Jesus was born in Bethlehem to fulfill the prophecy of Micah 5:2."
+      },
+      {
         question: "Who was swallowed by a great fish?",
-        options: ["Moses", "Noah", "Jonah", "David"],
-        answer: "Jonah"
+        options: ["Isaiah", "Jonah", "Ezekiel", "Jeremiah"],
+        answer: "Jonah",
+        explanation: "Jonah ran from God's call and was swallowed by a fish for three days (Jonah 1:17)."
       },
       {
-        question: "What is the first book of the Bible?",
-        options: ["Exodus", "Genesis", "Matthew", "Psalms"],
-        answer: "Genesis"
+        question: "What is the last book of the Bible?",
+        options: ["Hebrews", "Jude", "Revelation", "Acts"],
+        answer: "Revelation",
+        explanation: "Revelation describes the final victory of God and Christ’s return."
       },
       {
-        question: "How many days did God take to create the world?",
-        options: ["3", "6", "7", "40"],
-        answer: "6"
+        question: "What did Jesus turn water into?",
+        options: ["Honey", "Milk", "Wine", "Oil"],
+        answer: "Wine",
+        explanation: "Jesus performed His first miracle at a wedding in Cana (John 2:1-11)."
       },
       {
-        question: "Who betrayed Jesus?",
-        options: ["Peter", "Judas", "Paul", "Thomas"],
-        answer: "Judas"
+        question: "Who led the Israelites out of Egypt?",
+        options: ["Joseph", "David", "Moses", "Aaron"],
+        answer: "Moses",
+        explanation: "God chose Moses to lead His people out of slavery (Exodus 3)."
       }
     ];
 
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    let shuffled = [];
     let current = 0;
     let lives = 3;
     let xp = 0;
 
     function startGame() {
+      shuffled = shuffle([...questions]);
       lives = 3;
       xp = 0;
       current = 0;
@@ -125,18 +157,18 @@
       document.getElementById("game").style.display = "block";
       document.getElementById("game-over").style.display = "none";
       document.getElementById("leaderboard").innerHTML = '';
+      document.getElementById("explanation").textContent = '';
       showQuestion();
     }
 
     function showQuestion() {
-      if (current >= questions.length || lives <= 0) {
-        return endGame();
-      }
+      if (current >= shuffled.length || lives <= 0) return endGame();
 
-      const q = questions[current];
+      const q = shuffled[current];
       document.getElementById("question").textContent = q.question;
       const optionsEl = document.getElementById("options");
       optionsEl.innerHTML = '';
+      document.getElementById("explanation").textContent = '';
 
       q.options.forEach(opt => {
         const btn = document.createElement("div");
@@ -148,24 +180,23 @@
     }
 
     function checkAnswer(selected, btn) {
-      const correct = questions[current].answer;
+      const correct = shuffled[current].answer;
+      const explanation = shuffled[current].explanation || "";
       if (selected === correct) {
         btn.classList.add("correct");
         xp += 10;
         document.getElementById("xp").textContent = xp;
-        setTimeout(() => {
-          current++;
-          showQuestion();
-        }, 1000);
       } else {
         btn.classList.add("incorrect");
         lives--;
         document.getElementById("lives").textContent = lives;
-        setTimeout(() => {
-          current++;
-          showQuestion();
-        }, 1000);
       }
+      document.getElementById("explanation").textContent = explanation;
+
+      setTimeout(() => {
+        current++;
+        showQuestion();
+      }, 1800);
     }
 
     async function endGame() {
