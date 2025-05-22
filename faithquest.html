@@ -84,7 +84,10 @@
     const firebaseConfig = {
       apiKey: "AIzaSyAWT0pDA0Rqv9GI8wVgAOZKakpydjTI6z4",
       authDomain: "faithquest-1a124.firebaseapp.com",
-      projectId: "faithquest-1a124"
+      projectId: "faithquest-1a124",
+      storageBucket: "faithquest-1a124.appspot.com",
+      messagingSenderId: "680483549913",
+      appId: "1:680483549913:web:YOUR_APP_ID" // ← Replace with your actual app ID
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -97,10 +100,10 @@
 
     const questions = [
       {
-        question: "Who built the ark?",
-        options: ["Moses", "Noah", "David", "Abraham"],
-        answer: "Noah",
-        explanation: "God told Noah to build the ark to save his family and animals from the flood."
+        question: "Who was swallowed by a great fish?",
+        options: ["Isaiah", "Jonah", "Ezekiel", "Jeremiah"],
+        answer: "Jonah",
+        explanation: "Jonah disobeyed God and was swallowed by a great fish for three days (Jonah 1:17)."
       },
       {
         question: "Where was Jesus born?",
@@ -109,16 +112,10 @@
         explanation: "Jesus was born in Bethlehem to fulfill the prophecy of Micah 5:2."
       },
       {
-        question: "Who was swallowed by a great fish?",
-        options: ["Isaiah", "Jonah", "Ezekiel", "Jeremiah"],
-        answer: "Jonah",
-        explanation: "Jonah ran from God's call and was swallowed by a fish for three days (Jonah 1:17)."
-      },
-      {
         question: "What is the last book of the Bible?",
         options: ["Hebrews", "Jude", "Revelation", "Acts"],
         answer: "Revelation",
-        explanation: "Revelation describes the final victory of God and Christ’s return."
+        explanation: "The Book of Revelation describes the end times and Christ’s return."
       },
       {
         question: "What did Jesus turn water into?",
@@ -127,10 +124,16 @@
         explanation: "Jesus performed His first miracle at a wedding in Cana (John 2:1-11)."
       },
       {
+        question: "Who built the ark?",
+        options: ["Moses", "Noah", "David", "Abraham"],
+        answer: "Noah",
+        explanation: "God instructed Noah to build an ark to save his family and animals from the flood (Genesis 6)."
+      },
+      {
         question: "Who led the Israelites out of Egypt?",
         options: ["Joseph", "David", "Moses", "Aaron"],
         answer: "Moses",
-        explanation: "God chose Moses to lead His people out of slavery (Exodus 3)."
+        explanation: "God chose Moses to lead the Israelites out of slavery in Egypt (Exodus 3)."
       }
     ];
 
