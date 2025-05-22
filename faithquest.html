@@ -65,10 +65,30 @@
       <h2>Game Over</h2>
       <p>Your final XP: <span id="final-xp">0</span></p>
       <button onclick="startGame()">Play Again</button>
+      <div id="leaderboard" style="margin-top: 2em;"></div>
     </div>
   </div>
 
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
   <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAWT0pDA0Rqv9GI8wVgAOZKakpydjTI6z4",
+      authDomain: "faithquest-1a124.firebaseapp.com",
+      projectId: "faithquest-1a124"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    let currentUser = null;
+
+    auth.signInAnonymously().then(res => {
+      currentUser = res.user;
+    });
+
     const questions = [
       {
         question: "Who was swallowed by a great fish?",
@@ -104,6 +124,7 @@
       document.getElementById("xp").textContent = xp;
       document.getElementById("game").style.display = "block";
       document.getElementById("game-over").style.display = "none";
+      document.getElementById("leaderboard").innerHTML = '';
       showQuestion();
     }
 
@@ -147,13 +168,38 @@
       }
     }
 
-    function endGame() {
+    async function endGame() {
       document.getElementById("game").style.display = "none";
       document.getElementById("game-over").style.display = "block";
       document.getElementById("final-xp").textContent = xp;
+
+      const name = prompt("Enter your name for the leaderboard:");
+      if (name && currentUser) {
+        await db.collection("leaderboard").add({
+          uid: currentUser.uid,
+          name: name,
+          xp: xp,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+
+      showLeaderboard();
     }
 
-    // Start on load
+    async function showLeaderboard() {
+      const snap = await db.collection("leaderboard")
+        .orderBy("xp", "desc")
+        .limit(5)
+        .get();
+
+      const leaderboardEl = document.getElementById("leaderboard");
+      leaderboardEl.innerHTML = "<h3>🏆 Top 5 Leaderboard</h3>";
+      snap.forEach(doc => {
+        const data = doc.data();
+        leaderboardEl.innerHTML += `<p>${data.name}: ${data.xp} XP</p>`;
+      });
+    }
+
     window.onload = startGame;
   </script>
 </body>
