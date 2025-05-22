@@ -2,58 +2,73 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>FaithQuest – Bible Adventure</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#4a90e2" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>FaithQuest</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="css/style.css" />
   <style>
-    body { margin: 0; font-family: Arial, sans-serif; background: #eef2fb; text-align: center; }
-    .map { padding: 2em; }
-    .map-stage {
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: #eef3ff;
+      color: #333;
+      text-align: center;
+    }
+    .container { max-width: 600px; margin: auto; padding: 2em; }
+    .level-card {
       background: #fff;
-      margin: 1em auto;
-      max-width: 300px;
-      padding: 1.5em;
+      margin: 1em 0;
+      padding: 1em;
       border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       cursor: pointer;
     }
-    .locked { opacity: 0.5; cursor: not-allowed; }
-    .stage-icon { width: 40px; vertical-align: middle; margin-right: 10px; }
-    .xp-bar { background: #ccc; border-radius: 10px; height: 12px; margin: 10px auto; max-width: 300px; }
-    .xp-fill { background: #4a90e2; height: 100%; width: 0%; border-radius: 10px; transition: width 0.5s; }
+    .locked { color: #aaa; background: #f4f4f4; cursor: default; }
+    .question-box { background: #fff; padding: 2em; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 1em; }
+    .option {
+      background: #f1f1f1;
+      margin: 0.5em 0;
+      padding: 1em;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .correct { background: #c8f7c5 !important; }
+    .incorrect { background: #ffc2c2 !important; }
+    .score-bar { margin-top: 1em; }
   </style>
 </head>
 <body>
-  <div id="intro" class="map">
-    <h1>🌟 FaithQuest Journey</h1>
-    <div id="avatarBlock" style="margin: 1em;"></div>
-    <div class="xp-bar"><div id="xpFill" class="xp-fill"></div></div>
-    <div class="map-stage" onclick="startStage('bethlehem')">📍 Bethlehem (Unlocked)</div>
-    <div id="nazarethBtn" class="map-stage locked">📍 Nazareth (Locked)</div>
-    <div id="jerusalemBtn" class="map-stage locked">📍 Jerusalem (Locked)</div>
-  </div>
+  <div class="container">
+    <div id="journey">
+      <h1>🌟 FaithQuest Journey</h1>
+      <div id="avatar"></div>
+      <p id="levelInfo"></p>
+      <div id="xpBar" style="background:#ccc;height:8px;width:80%;margin:auto;border-radius:4px;overflow:hidden;">
+        <div id="xpProgress" style="height:8px;background:#5c8df6;width:0%"></div>
+      </div>
+      <div class="level-card" onclick="startLevel('bethlehem')" id="card-bethlehem">🔹 Bethlehem (Unlocked)</div>
+      <div class="level-card locked" id="card-nazareth">🔹 Nazareth (Locked)</div>
+      <div class="level-card locked" id="card-jerusalem">🔹 Jerusalem (Locked)</div>
+    </div>
 
-  <div id="gameScreen" style="display:none;">
-    <div id="stageTitle" style="font-size: 1.4em; margin-top: 1em;"></div>
-    <div id="questionBox" style="margin: 2em auto; max-width: 500px;"></div>
-    <div id="optionsBox"></div>
-    <div id="feedback" style="font-style: italic; margin-top: 1em;"></div>
-    <div class="score-bar" style="margin-top: 1em;">
-      Lives: <span id="lives">3</span> | XP: <span id="xp">0</span> | Streak: <span id="streak">0</span>
+    <div id="game" style="display:none;">
+      <div id="question" class="question-box"></div>
+      <div id="options"></div>
+      <div class="score-bar">
+        Lives: <span id="lives">3</span> | XP: <span id="xp">0</span>
+      </div>
+    </div>
+
+    <div id="game-over" style="display:none;">
+      <h2>Game Over</h2>
+      <p>Your final XP: <span id="final-xp">0</span></p>
+      <button onclick="location.reload()">Play Again</button>
     </div>
   </div>
 
-  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAWT0pDA0Rqv9GI8wVgAOZKakpydjTI6z4",
@@ -64,118 +79,90 @@
     const db = firebase.firestore();
     const auth = firebase.auth();
     let currentUser = null;
-    auth.signInAnonymously().then(res => currentUser = res.user);
 
-    const questions = {
+    auth.signInAnonymously().then(res => {
+      currentUser = res.user;
+      loadProfile();
+    });
+
+    const xpPerCorrect = 10;
+    let currentLevel = "bethlehem", current = 0, lives = 3, xp = 0;
+    let pool = [];
+
+    const levels = {
       bethlehem: [
-        { q: "Where was Jesus born?", a: "Bethlehem", options: ["Nazareth", "Bethlehem", "Jerusalem", "Capernaum"], e: "Jesus was born in Bethlehem (Luke 2:4–7)." },
-        { q: "Who visited baby Jesus with gifts?", a: "Wise Men", options: ["Shepherds", "Angels", "Wise Men", "Pharisees"], e: "The Wise Men brought gold, frankincense, and myrrh." }
+        { q: "Where was Jesus born?", o: ["Nazareth", "Bethlehem", "Jerusalem", "Capernaum"], a: "Bethlehem" },
+        { q: "Who visited Jesus with gifts?", o: ["Shepherds", "Wise Men", "Soldiers", "Angels"], a: "Wise Men" }
       ],
       nazareth: [
-        { q: "Where did Jesus grow up?", a: "Nazareth", options: ["Bethlehem", "Jerusalem", "Nazareth", "Galilee"], e: "Jesus was raised in Nazareth." },
-        { q: "Who baptized Jesus?", a: "John the Baptist", options: ["Peter", "Moses", "John the Baptist", "Elijah"], e: "John baptized Jesus in the Jordan River." }
+        { q: "Who baptized Jesus?", o: ["Paul", "John", "Peter", "David"], a: "John" },
+        { q: "What was Jesus' first miracle?", o: ["Healing", "Walking on water", "Water to wine", "Feeding 5,000"], a: "Water to wine" }
       ],
       jerusalem: [
-        { q: "Where was Jesus crucified?", a: "Jerusalem", options: ["Nazareth", "Bethlehem", "Galilee", "Jerusalem"], e: "Jesus was crucified outside Jerusalem." },
-        { q: "What happened on the third day?", a: "Resurrection", options: ["Ascension", "Burial", "Resurrection", "Sermon"], e: "Jesus rose again on the third day." }
+        { q: "Where was Jesus crucified?", o: ["Nazareth", "Bethlehem", "Golgotha", "Rome"], a: "Golgotha" },
+        { q: "Who denied Jesus three times?", o: ["John", "Peter", "James", "Thomas"], a: "Peter" }
       ]
     };
 
-    let currentStage = "", currentQ = 0, xp = 0, streak = 0, lives = 3;
-
-    function updateXPBar() {
-      const totalXP = parseInt(localStorage.getItem("totalXP") || "0");
-      document.getElementById("xpFill").style.width = Math.min((totalXP % 100) + "%", "100%");
-    }
-
-    function renderAvatar() {
+    function loadProfile() {
       const avatar = localStorage.getItem("avatar") || "seeker";
-      const totalXP = parseInt(localStorage.getItem("totalXP") || "0");
+      const totalXP = parseInt(localStorage.getItem("totalXP") || '0');
       const level = Math.floor(totalXP / 100) + 1;
-      document.getElementById("avatarBlock").innerHTML = `
-        <img src="avatars/${avatar}.png" style="width:64px;height:64px;border-radius:50%;" />
-        <p>Level ${level} ${avatar}</p>`;
+      document.getElementById("avatar").innerHTML = `<img src='avatars/${avatar}.png' style='width:64px;border-radius:50%;'>`;
+      document.getElementById("levelInfo").textContent = `Level ${level} ${avatar}`;
+      document.getElementById("xpProgress").style.width = `${totalXP % 100}%`;
+      if (totalXP >= 30) document.getElementById("card-nazareth").classList.remove("locked");
+      if (totalXP >= 60) document.getElementById("card-jerusalem").classList.remove("locked");
     }
 
-    function startStage(stage) {
-      currentStage = stage;
-      currentQ = 0; lives = 3; streak = 0;
-      document.getElementById("intro").style.display = "none";
-      document.getElementById("gameScreen").style.display = "block";
-      document.getElementById("stageTitle").textContent = "📍 " + stage.charAt(0).toUpperCase() + stage.slice(1);
-      document.getElementById("xp").textContent = xp;
+    function startLevel(level) {
+      if (document.getElementById("card-" + level).classList.contains("locked")) return;
+      currentLevel = level;
+      pool = [...levels[level]];
+      current = 0;
+      lives = 3;
+      xp = 0;
+      document.getElementById("journey").style.display = "none";
+      document.getElementById("game").style.display = "block";
       document.getElementById("lives").textContent = lives;
-      document.getElementById("streak").textContent = streak;
+      document.getElementById("xp").textContent = xp;
       showQuestion();
     }
 
     function showQuestion() {
-      const q = questions[currentStage][currentQ];
-      if (!q) return completeStage();
-
-      document.getElementById("questionBox").textContent = q.q;
-      document.getElementById("optionsBox").innerHTML = '';
-      document.getElementById("feedback").textContent = '';
-
-      q.options.forEach(opt => {
-        const btn = document.createElement("button");
+      if (current >= pool.length || lives <= 0) return endGame();
+      const q = pool[current];
+      document.getElementById("question").textContent = q.q;
+      const optBox = document.getElementById("options");
+      optBox.innerHTML = "";
+      q.o.forEach(opt => {
+        const btn = document.createElement("div");
+        btn.className = "option";
         btn.textContent = opt;
-        btn.onclick = () => checkAnswer(opt, q.a, q.e);
-        btn.style.margin = "0.5em"; btn.style.padding = "1em"; btn.style.borderRadius = "8px";
-        document.getElementById("optionsBox").appendChild(btn);
+        btn.onclick = () => checkAnswer(opt, q.a, btn);
+        optBox.appendChild(btn);
       });
     }
 
-    function checkAnswer(selected, correct, explanation) {
-      const feedback = document.getElementById("feedback");
+    function checkAnswer(selected, correct, btn) {
       if (selected === correct) {
-        streak++; xp += 10;
-        feedback.textContent = "✅ Correct! " + explanation;
+        btn.classList.add("correct");
+        xp += xpPerCorrect;
       } else {
-        streak = 0; lives--;
-        feedback.textContent = "❌ Incorrect. " + explanation;
+        btn.classList.add("incorrect");
+        lives--;
       }
-      document.getElementById("xp").textContent = xp;
       document.getElementById("lives").textContent = lives;
-      document.getElementById("streak").textContent = streak;
-
-      if (lives <= 0) return gameOver();
-
-      currentQ++;
-      setTimeout(showQuestion, 1500);
+      document.getElementById("xp").textContent = xp;
+      setTimeout(() => { current++; showQuestion(); }, 1200);
     }
 
-    function completeStage() {
-      document.getElementById("gameScreen").style.display = "none";
-      document.getElementById("intro").style.display = "block";
-
-      const totalXP = parseInt(localStorage.getItem("totalXP") || "0") + xp;
-      localStorage.setItem("totalXP", totalXP);
-      updateXPBar(); renderAvatar();
-
-      if (currentStage === "bethlehem") document.getElementById("nazarethBtn").classList.remove("locked");
-      if (currentStage === "nazareth") document.getElementById("jerusalemBtn").classList.remove("locked");
-
-      alert("🎉 Stage Completed! XP gained: " + xp);
-    }
-
-    function gameOver() {
-      alert("🛑 Game Over! You ran out of lives.");
-      document.getElementById("gameScreen").style.display = "none";
-      document.getElementById("intro").style.display = "block";
-    }
-
-    window.onload = () => {
-      updateXPBar();
-      renderAvatar();
-    };
-  </script>
-
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js')
-        .then(() => console.log("✅ SW registered"))
-        .catch(err => console.error("❌ SW error", err));
+    function endGame() {
+      document.getElementById("game").style.display = "none";
+      document.getElementById("game-over").style.display = "block";
+      document.getElementById("final-xp").textContent = xp;
+      const total = parseInt(localStorage.getItem("totalXP") || '0');
+      localStorage.setItem("totalXP", total + xp);
     }
   </script>
 </body>
