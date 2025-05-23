@@ -62,7 +62,6 @@
       <div class="question-card">
         <h2>👤 Your Profile</h2>
         <input type="text" id="username" placeholder="Enter your name" style="width:100%;padding:8px;margin-bottom:10px;" />
-        <div class="avatar-select" id="avatarGrid"></div>
         <button onclick="saveProfile()">💾 Save Profile</button>
       </div>
     </section>
@@ -84,7 +83,6 @@
     let user = null;
     let xp = 0;
     let streak = 0;
-    let avatar = "";
 
     auth.onAuthStateChanged(async (u) => {
       if (u) {
@@ -94,7 +92,6 @@
           const data = doc.data();
           xp = data.xp || 0;
           streak = data.streak || 0;
-          avatar = data.avatar || "";
           document.getElementById("xp").textContent = xp;
           document.getElementById("streak").textContent = streak;
           updateProgressBar();
@@ -115,20 +112,9 @@
     function saveProfile() {
       const name = document.getElementById("username").value;
       if (user) {
-        db.collection("faithquest_users").doc(user.uid).set({ name, avatar, xp, streak }, { merge: true });
+        db.collection("faithquest_users").doc(user.uid).set({ name, xp, streak }, { merge: true });
         alert("Profile Saved!");
       }
-    }
-
-    function renderAvatars() {
-      const container = document.getElementById("avatarGrid");
-      const avatars = [...Array(15).keys()].map(i => `avatars/avatar${i + 1}.png`);
-      container.innerHTML = avatars.map(a => `<img src="${a}" onclick="selectAvatar('${a}')" style="width:60px;border-radius:50%;margin:5px;${a===avatar?'border:3px solid #4b6cb7':''}"/>`).join("");
-    }
-
-    function selectAvatar(a) {
-      avatar = a;
-      renderAvatars();
     }
 
     function gainXP(amount) {
@@ -169,7 +155,6 @@
 
     window.onload = () => {
       updateProgressBar();
-      renderAvatars();
     }
   </script>
 </body>
