@@ -2,183 +2,76 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>FaithQuest – Bible Trivia Adventure</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" href="favicon.ico" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="FaithQuest">
-  <meta name="mobile-web-app-capable" content="yes">
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FaithQuest – Faith Journal</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" />
   <style>
-    body { font-family: 'Nunito', sans-serif; background: #f3f4f6; margin: 0; padding: 0; }
-    header { background: linear-gradient(to right, #182848, #4b6cb7); color: white; text-align: center; padding: 1rem; }
-    nav { display: flex; justify-content: space-around; background: #e5e7eb; padding: 0.5rem; position: sticky; top: 0; z-index: 10; }
-    nav button { flex: 1; margin: 0 4px; background: #ffffff; border: none; padding: 10px; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    body { font-family: 'Nunito', sans-serif; margin: 0; background: #f9fafb; color: #111827; }
+    header { background: linear-gradient(to right, #182848, #4b6cb7); color: white; padding: 1.5rem; text-align: center; }
+    nav { display: flex; justify-content: space-around; background: #e5e7eb; padding: 0.5rem; }
+    nav button { background: #fff; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; }
     nav button.active { background: #4b6cb7; color: white; }
-    .tab-content { display: none; padding: 1rem; }
+    .tab-content { display: none; padding: 1rem; max-width: 700px; margin: auto; }
     .tab-content.active { display: block; }
-    .question-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 600px; margin: 1rem auto; }
-    .badge { display: inline-block; padding: 0.5rem 1rem; background: #fde68a; border-radius: 1rem; margin: 0.25rem; font-weight: bold; }
-    .confetti { position: fixed; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 9999; }
-    #progress-bar { background: #d1fae5; border-radius: 20px; overflow: hidden; height: 20px; margin-top: 10px; }
-    #progress-fill { background: #10b981; height: 100%; width: 0%; transition: width 0.3s ease; }
+    textarea { width: 100%; min-height: 150px; padding: 1rem; border: 1px solid #d1d5db; border-radius: 8px; margin-top: 1rem; }
+    .entry-card { background: #fff; padding: 1rem; border-radius: 8px; margin: 1rem 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .entry-card p { margin: 0.5rem 0; }
   </style>
 </head>
 <body>
   <header>
-    <h1>📖 FaithQuest: Bible Trivia Adventure</h1>
-    <p>Grow your faith. Level up your knowledge. 🎯</p>
+    <h1>🙏 FaithQuest</h1>
+    <p>Your personal journey of faith and reflection</p>
   </header>
   <nav>
-    <button onclick="showTab('quiz')">🧠 Quiz</button>
-    <button onclick="showTab('journey')">🗺️ Journey</button>
-    <button onclick="showTab('leaderboard')">🏆 Leaderboard</button>
-    <button onclick="showTab('study')">📖 Study</button>
-    <button onclick="showTab('missions')">🔥 Missions</button>
-    <button onclick="showTab('badges')">🎖 Badges</button>
+    <button onclick="showTab('journal')" class="active">📓 Journal</button>
+    <button onclick="showTab('verse')">📖 Verse</button>
+    <button onclick="showTab('goals')">🎯 Goals</button>
     <button onclick="showTab('profile')">👤 Profile</button>
   </nav>
   <main>
-    <section id="quiz" class="tab-content active">
-      <div class="question-card">
-        <h2>Quiz</h2>
-        <label>Difficulty:
-          <select id="difficulty" onchange="resetQuiz()">
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-        </label>
-        <p><strong>Question:</strong> <span id="question"></span></p>
-        <div id="answers"></div>
-        <p><strong>Streak:</strong> <span id="streak">0</span></p>
-        <div id="progress-bar"><div id="progress-fill"></div></div>
-        <p><strong>XP:</strong> <span id="xp">0</span></p>
-        <p><strong>Level:</strong> <span id="level">1</span></p>
-      </div>
+    <section id="journal" class="tab-content active">
+      <h2>📓 Daily Journal</h2>
+      <textarea id="journalEntry" placeholder="Write your thoughts, prayers, or reflections here..."></textarea>
+      <button onclick="saveJournal()">💾 Save Entry</button>
+      <div id="journalLog"></div>
+    </section>
+    <section id="verse" class="tab-content">
+      <h2>📖 Verse of the Day</h2>
+      <p id="dailyVerse">"Trust in the Lord with all your heart..." – Proverbs 3:5</p>
+      <textarea placeholder="What does this verse mean to you?"></textarea>
+    </section>
+    <section id="goals" class="tab-content">
+      <h2>🎯 Faith Goals</h2>
+      <ul>
+        <li>✅ Pray daily</li>
+        <li>✅ Read a Bible passage</li>
+        <li>⬜ Journal 5x this week</li>
+      </ul>
     </section>
     <section id="profile" class="tab-content">
-      <div class="question-card">
-        <h2>👤 Your Profile</h2>
-        <input type="text" id="username" placeholder="Enter your name" style="width:100%;padding:8px;margin-bottom:10px;" />
-        <button onclick="saveProfile()">💾 Save Profile</button>
-      </div>
-    </section>
-    <section id="badges" class="tab-content">
-      <div class="question-card">
-        <h2>🎖 Badges</h2>
-        <div id="badge-box"></div>
-      </div>
+      <h2>👤 Profile</h2>
+      <input type="text" placeholder="Your Name" style="width: 100%; padding: 0.5rem;" />
+      <p style="margin-top: 1rem;">Your data is saved locally for now.</p>
     </section>
   </main>
-  <div class="confetti" id="confetti" style="display:none">🎉🎉🎉</div>
   <script>
-    let xp = 0;
-    let streak = 0;
-    let totalAnswered = 0;
-    let currentQuestionIndex = 0;
-    const questions = {
-      easy: [
-        { q: "What is the first book of the Bible?", a: ["Genesis", "Exodus", "Leviticus"], correct: 0 },
-        { q: "Who built the ark?", a: ["Abraham", "Moses", "Noah"], correct: 2 }
-      ],
-      medium: [
-        { q: "What river did Jesus get baptized in?", a: ["Nile", "Jordan", "Euphrates"], correct: 1 },
-        { q: "Who was the mother of Jesus?", a: ["Mary", "Elizabeth", "Ruth"], correct: 0 }
-      ],
-      hard: [
-        { q: "How many books are in the Bible?", a: ["66", "72", "39"], correct: 0 },
-        { q: "Who wrote most of the New Testament letters?", a: ["Paul", "Peter", "John"], correct: 0 }
-      ]
-    };
-
-    function updateProgressBar() {
-      const fill = document.getElementById("progress-fill");
-      const level = document.getElementById("level");
-      const percent = Math.min((xp % 100), 100);
-      fill.style.width = percent + "%";
-      level.textContent = Math.floor(xp / 100) + 1;
-    }
-
-    function saveProgress() {
-      localStorage.setItem("faithquest_progress", JSON.stringify({ xp, streak, totalAnswered }));
-    }
-
-    function loadProgress() {
-      const saved = JSON.parse(localStorage.getItem("faithquest_progress") || "{}");
-      xp = saved.xp || 0;
-      streak = saved.streak || 0;
-      totalAnswered = saved.totalAnswered || 0;
-      document.getElementById("xp").textContent = xp;
-      document.getElementById("streak").textContent = streak;
-      updateProgressBar();
-    }
-
-    function saveProfile() {
-      alert("Profile saved locally.");
-    }
-
-    function gainXP(amount) {
-      xp += amount;
-      document.getElementById("xp").textContent = xp;
-      updateProgressBar();
-      saveProgress();
-      updateBadges();
-    }
-
-    function answerQuestion(index) {
-      const difficulty = document.getElementById("difficulty").value;
-      const q = questions[difficulty][currentQuestionIndex];
-      totalAnswered++;
-      if (index === q.correct) {
-        streak++;
-        gainXP(10);
-        if (xp % 100 === 0) {
-          document.getElementById("confetti").style.display = "block";
-          setTimeout(() => document.getElementById("confetti").style.display = "none", 3000);
-        }
-      } else {
-        streak = 0;
-      }
-      document.getElementById("streak").textContent = streak;
-      currentQuestionIndex = (currentQuestionIndex + 1) % questions[difficulty].length;
-      showQuestion();
-    }
-
-    function showQuestion() {
-      const difficulty = document.getElementById("difficulty").value;
-      const q = questions[difficulty][currentQuestionIndex];
-      document.getElementById("question").textContent = q.q;
-      document.getElementById("answers").innerHTML = q.a.map((ans, i) => `<button onclick="answerQuestion(${i})">${ans}</button>`).join("<br/>");
-    }
-
-    function resetQuiz() {
-      currentQuestionIndex = 0;
-      showQuestion();
-    }
-
-    function updateBadges() {
-      const box = document.getElementById("badge-box");
-      box.innerHTML = "";
-      if (xp >= 10) box.innerHTML += '<div class="badge">📘 Starter</div>';
-      if (xp >= 50) box.innerHTML += '<div class="badge">📗 Intermediate</div>';
-      if (xp >= 100) box.innerHTML += '<div class="badge">📕 Expert</div>';
-      if (streak >= 3) box.innerHTML += '<div class="badge">🔥 3x Streak</div>';
-      if (totalAnswered >= 10) box.innerHTML += '<div class="badge">🎯 10 Questions</div>';
-    }
-
-    function showTab(tab) {
+    function showTab(tabId) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.getElementById(tab).classList.add('active');
+      document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      document.querySelector(`nav button[onclick*='${tabId}']`).classList.add('active');
     }
 
-    window.onload = () => {
-      loadProgress();
-      showQuestion();
-      updateBadges();
+    function saveJournal() {
+      const text = document.getElementById('journalEntry').value.trim();
+      if (text) {
+        const entry = document.createElement('div');
+        entry.className = 'entry-card';
+        entry.innerHTML = `<p><strong>${new Date().toLocaleString()}:</strong></p><p>${text}</p>`;
+        document.getElementById('journalLog').prepend(entry);
+        document.getElementById('journalEntry').value = '';
+      }
     }
   </script>
 </body>
