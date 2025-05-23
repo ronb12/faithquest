@@ -118,25 +118,121 @@
     <button onclick="showTab('missions')">🔥 Missions</button>
   </nav>
 
-  <main>
-    <section id="quiz" class="tab-content active">
-      <!-- Quiz Content Injected Here -->
-    </section>
+ <main>
+  <!-- Quiz Tab -->
+  <section id="quiz" class="tab-content active">
+    <div class="question-card" id="quiz-container">
+      <!-- Quiz logic will dynamically inject content -->
+    </div>
+  </section>
 
-    <section id="journey" class="tab-content">
-      <!-- Journey Map Content -->
-    </section>
+  <!-- Journey Map Tab -->
+  <section id="journey" class="tab-content">
+    <div class="question-card">
+      <h2>🗺️ Faith Journey Map</h2>
+      <p>Complete quizzes to unlock each stage of your journey with Jesus.</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+        <div style="background: #fff; border-left: 6px solid #3b82f6; padding: 1rem; border-radius: 8px;">
+          <h3>📍 Bethlehem</h3>
+          <p>Birth of Jesus – the journey begins with hope.</p>
+        </div>
+        <div style="background: #fff; border-left: 6px solid #10b981; padding: 1rem; border-radius: 8px;">
+          <h3>📍 Nazareth</h3>
+          <p>Jesus' childhood and growth in wisdom and grace.</p>
+        </div>
+        <div style="background: #fff; border-left: 6px solid #f59e0b; padding: 1rem; border-radius: 8px;">
+          <h3>📍 Jordan River</h3>
+          <p>Baptism of Jesus – a declaration of divine purpose.</p>
+        </div>
+        <div style="background: #fff; border-left: 6px solid #8b5cf6; padding: 1rem; border-radius: 8px;">
+          <h3>📍 Galilee</h3>
+          <p>Miracles and teachings that shaped discipleship.</p>
+        </div>
+        <div style="background: #fff; border-left: 6px solid #ef4444; padding: 1rem; border-radius: 8px;">
+          <h3>📍 Jerusalem</h3>
+          <p>The Passion, the Cross, and the Resurrection – victory over sin!</p>
+        </div>
+      </div>
+      <p style="margin-top:1rem; font-weight: bold;">More stages coming soon: Pentecost, Paul's Journeys, and Revelation!</p>
+    </div>
+  </section>
 
-    <section id="leaderboard" class="tab-content">
-      <!-- Firebase Leaderboard -->
-    </section>
+  <!-- Leaderboard Tab -->
+  <section id="leaderboard" class="tab-content">
+    <div class="question-card">
+      <h2>🏆 Leaderboard</h2>
+      <ul id="scores"></ul>
+    </div>
+  </section>
 
-    <section id="study" class="tab-content">
-      <!-- Verse of the Day + Study Explanations -->
-    </section>
+  <!-- Study Tab: Verse of the Day -->
+  <section id="study" class="tab-content">
+    <div class="question-card">
+      <h2>📖 Verse of the Day</h2>
+      <div id="daily-verse" style="font-style: italic; background: #fff8dc; padding: 1rem; border-left: 4px solid #f59e0b;"></div>
+      <button onclick="loadVerseOfTheDay()">🔄 Refresh Verse</button>
+    </div>
+  </section>
 
-    <section id="missions" class="tab-content">
-      <!-- Daily Missions, Streaks, Power-ups -->
+  <!-- Missions Tab -->
+  <section id="missions" class="tab-content">
+    <div class="question-card">
+      <h2>🔥 Daily Missions</h2>
+      <ul id="mission-list"></ul>
+      <p>🔥 <strong>Streak:</strong> <span id="streak-count">0</span> answers in a row</p>
+      <p>⭐ <strong>Total XP:</strong> <span id="xp-count">0</span></p>
+      <div id="badge-box"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+  // Daily Missions
+  const missions = [
+    "📖 Read 3 Bible verses",
+    "🧠 Complete 1 quiz",
+    "🎯 Earn 50 XP",
+    "🔥 Keep a 3-answer streak",
+    "💬 Share a verse with a friend"
+  ];
+
+  function loadMissions() {
+    const missionList = document.getElementById("mission-list");
+    missionList.innerHTML = missions.map(m => `<li>${m} <span style=\"color:green;\">[✔️]</span></li>`).join("");
+    document.getElementById("streak-count").textContent = streak;
+    document.getElementById("xp-count").textContent = xp;
+  }
+
+  function loadVerseOfTheDay() {
+    const verseList = [
+      "John 3:16 – For God so loved the world...",
+      "Psalm 23:1 – The Lord is my shepherd...",
+      "Romans 8:28 – All things work together for good...",
+      "Proverbs 3:5 – Trust in the Lord with all your heart...",
+      "Isaiah 40:31 – They that wait upon the Lord..."
+    ];
+    const todayIndex = new Date().getDate() % verseList.length;
+    document.getElementById("daily-verse").textContent = verseList[todayIndex];
+  }
+
+  function loadLeaderboard() {
+    const scoresList = document.getElementById("scores");
+    db.collection("faithquest_leaderboard").orderBy("xp", "desc").limit(10).get()
+      .then(snapshot => {
+        scoresList.innerHTML = "";
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const li = document.createElement("li");
+          li.textContent = `${data.name} – ${data.xp} XP`;
+          scoresList.appendChild(li);
+        });
+      });
+  }
+
+  document.querySelector(`nav button[onclick=\"showTab('leaderboard')\"]`).addEventListener("click", loadLeaderboard);
+  document.querySelector(`nav button[onclick=\"showTab('missions')\"]`).addEventListener("click", loadMissions);
+  document.querySelector(`nav button[onclick=\"showTab('study')\"]`).addEventListener("click", loadVerseOfTheDay);
+</script>
     </section>
   </main>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
