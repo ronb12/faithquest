@@ -1,0 +1,10 @@
+{
+  "appId": "com.ronellbradley.faithquest",
+  "appName": "FaithQuest",
+  "webDir": "./",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "http://localhost",  // leave as-is for local
+    "cleartext": true
+  }
+}
