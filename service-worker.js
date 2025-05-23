@@ -1,10 +1,16 @@
 const CACHE_NAME = "faithquest-cache-v1";
 const urlsToCache = [
-  "/faithquest/",
-  "/faithquest/faithquest.html",
-  "/faithquest/manifest.json",
-  "/faithquest/icons/icon-192.png",
-  "/faithquest/icons/icon-512.png"
+  "/", // root fallback
+  "/index.html",
+  "/faithquest.html",
+  "/about.html",
+  "/privacy.html",
+  "/terms.html",
+  "/manifest.json",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+  "/css/style.css",
+  "/js/main.js"
 ];
 
 // Install Service Worker
@@ -18,14 +24,20 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))
+      Promise.all(
+        keys
+          .filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key))
+      )
     )
   );
 });
 
-// Fetch Interception
+// Fetch requests
 self.addEventListener("fetch", event => {
   event.respondWith(
-    caches.match(event.request).then(response => response || fetch(event.request))
+    caches.match(event.request).then(response =>
+      response || fetch(event.request)
+    )
   );
 });
