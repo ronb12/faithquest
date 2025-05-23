@@ -100,7 +100,7 @@
       const entry = document.getElementById(`${type}Entry`).value;
       const key = `faithquest_${type}`;
       const list = JSON.parse(localStorage.getItem(key) || '[]');
-      list.push({ date: new Date().toLocaleDateString(), entry });
+      list.push({ date: new Date().toLocaleString(), entry });
       localStorage.setItem(key, JSON.stringify(list));
       updateTracker();
       alert("Saved!");
