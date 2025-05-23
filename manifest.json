@@ -1,11 +1,14 @@
 {
   "name": "FaithQuest",
   "short_name": "FaithQuest",
-  "start_url": "faithquest.html",
+  "description": "FaithQuest is your personal faith-based journal to reflect, pray, and grow spiritually.",
+  "lang": "en",
+  "start_url": "/faithquest.html",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#4a90e2",
-  "orientation": "portrait",
   "icons": [
     {
       "src": "icons/icon-192.png",
