@@ -12,9 +12,6 @@
   <meta name="apple-mobile-web-app-title" content="FaithQuest">
   <meta name="mobile-web-app-capable" content="yes">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet"/>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
     body { font-family: 'Nunito', sans-serif; background: #f3f4f6; margin: 0; padding: 0; }
     header { background: linear-gradient(to right, #182848, #4b6cb7); color: white; text-align: center; padding: 1rem; }
@@ -43,17 +40,22 @@
     <button onclick="showTab('missions')">🔥 Missions</button>
     <button onclick="showTab('badges')">🎖 Badges</button>
     <button onclick="showTab('profile')">👤 Profile</button>
-    <button onclick="signOut()">🚪 Logout</button>
   </nav>
   <main>
     <section id="quiz" class="tab-content active">
       <div class="question-card">
         <h2>Quiz</h2>
-        <p>Answer trivia questions to earn XP and unlock badges.</p>
+        <label>Difficulty:
+          <select id="difficulty" onchange="resetQuiz()">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </label>
+        <p><strong>Question:</strong> <span id="question"></span></p>
+        <div id="answers"></div>
         <p><strong>Streak:</strong> <span id="streak">0</span></p>
         <div id="progress-bar"><div id="progress-fill"></div></div>
-        <button onclick="simulateCorrectAnswer()">✅ Simulate Correct Answer</button>
-        <button onclick="simulateIncorrectAnswer()">❌ Simulate Incorrect Answer</button>
         <p><strong>XP:</strong> <span id="xp">0</span></p>
         <p><strong>Level:</strong> <span id="level">1</span></p>
       </div>
@@ -65,42 +67,33 @@
         <button onclick="saveProfile()">💾 Save Profile</button>
       </div>
     </section>
+    <section id="badges" class="tab-content">
+      <div class="question-card">
+        <h2>🎖 Badges</h2>
+        <div id="badge-box"></div>
+      </div>
+    </section>
   </main>
   <div class="confetti" id="confetti" style="display:none">🎉🎉🎉</div>
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-      authDomain: "mobile-debt-tracker.firebaseapp.com",
-      projectId: "mobile-debt-tracker",
-      storageBucket: "mobile-debt-tracker.appspot.com",
-      messagingSenderId: "184900127142",
-      appId: "1:184900127142:web:3ef50c672aa7cb14469a2f"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    let user = null;
     let xp = 0;
     let streak = 0;
-    let avatar = "";
-
-    auth.onAuthStateChanged(async (u) => {
-      if (u) {
-        user = u;
-        const doc = await db.collection("faithquest_users").doc(user.uid).get();
-        if (doc.exists) {
-          const data = doc.data();
-          xp = data.xp || 0;
-          streak = data.streak || 0;
-          avatar = data.avatar || "";
-          document.getElementById("xp").textContent = xp;
-          document.getElementById("streak").textContent = streak;
-          updateProgressBar();
-        }
-      } else {
-        console.warn("Anonymous auth disabled – please sign in manually.");
-      }
-    });
+    let totalAnswered = 0;
+    let currentQuestionIndex = 0;
+    const questions = {
+      easy: [
+        { q: "What is the first book of the Bible?", a: ["Genesis", "Exodus", "Leviticus"], correct: 0 },
+        { q: "Who built the ark?", a: ["Abraham", "Moses", "Noah"], correct: 2 }
+      ],
+      medium: [
+        { q: "What river did Jesus get baptized in?", a: ["Nile", "Jordan", "Euphrates"], correct: 1 },
+        { q: "Who was the mother of Jesus?", a: ["Mary", "Elizabeth", "Ruth"], correct: 0 }
+      ],
+      hard: [
+        { q: "How many books are in the Bible?", a: ["66", "72", "39"], correct: 0 },
+        { q: "Who wrote most of the New Testament letters?", a: ["Paul", "Peter", "John"], correct: 0 }
+      ]
+    };
 
     function updateProgressBar() {
       const fill = document.getElementById("progress-fill");
@@ -110,38 +103,71 @@
       level.textContent = Math.floor(xp / 100) + 1;
     }
 
+    function saveProgress() {
+      localStorage.setItem("faithquest_progress", JSON.stringify({ xp, streak, totalAnswered }));
+    }
+
+    function loadProgress() {
+      const saved = JSON.parse(localStorage.getItem("faithquest_progress") || "{}");
+      xp = saved.xp || 0;
+      streak = saved.streak || 0;
+      totalAnswered = saved.totalAnswered || 0;
+      document.getElementById("xp").textContent = xp;
+      document.getElementById("streak").textContent = streak;
+      updateProgressBar();
+    }
+
     function saveProfile() {
-      const name = document.getElementById("username").value;
-      if (user) {
-        db.collection("faithquest_users").doc(user.uid).set({ name, avatar, xp, streak }, { merge: true });
-        alert("Profile Saved!");
-      }
+      alert("Profile saved locally.");
     }
 
     function gainXP(amount) {
       xp += amount;
       document.getElementById("xp").textContent = xp;
       updateProgressBar();
-      if (user) db.collection("faithquest_users").doc(user.uid).set({ xp }, { merge: true });
+      saveProgress();
+      updateBadges();
     }
 
-    function simulateCorrectAnswer() {
-      streak++;
-      document.getElementById("streak").textContent = streak;
-      gainXP(10);
-      if (xp % 100 === 0) {
-        document.getElementById("confetti").style.display = "block";
-        setTimeout(() => {
-          document.getElementById("confetti").style.display = "none";
-        }, 3000);
+    function answerQuestion(index) {
+      const difficulty = document.getElementById("difficulty").value;
+      const q = questions[difficulty][currentQuestionIndex];
+      totalAnswered++;
+      if (index === q.correct) {
+        streak++;
+        gainXP(10);
+        if (xp % 100 === 0) {
+          document.getElementById("confetti").style.display = "block";
+          setTimeout(() => document.getElementById("confetti").style.display = "none", 3000);
+        }
+      } else {
+        streak = 0;
       }
-      if (user) db.collection("faithquest_users").doc(user.uid).set({ streak }, { merge: true });
+      document.getElementById("streak").textContent = streak;
+      currentQuestionIndex = (currentQuestionIndex + 1) % questions[difficulty].length;
+      showQuestion();
     }
 
-    function simulateIncorrectAnswer() {
-      streak = 0;
-      document.getElementById("streak").textContent = streak;
-      if (user) db.collection("faithquest_users").doc(user.uid).set({ streak }, { merge: true });
+    function showQuestion() {
+      const difficulty = document.getElementById("difficulty").value;
+      const q = questions[difficulty][currentQuestionIndex];
+      document.getElementById("question").textContent = q.q;
+      document.getElementById("answers").innerHTML = q.a.map((ans, i) => `<button onclick="answerQuestion(${i})">${ans}</button>`).join("<br/>");
+    }
+
+    function resetQuiz() {
+      currentQuestionIndex = 0;
+      showQuestion();
+    }
+
+    function updateBadges() {
+      const box = document.getElementById("badge-box");
+      box.innerHTML = "";
+      if (xp >= 10) box.innerHTML += '<div class="badge">📘 Starter</div>';
+      if (xp >= 50) box.innerHTML += '<div class="badge">📗 Intermediate</div>';
+      if (xp >= 100) box.innerHTML += '<div class="badge">📕 Expert</div>';
+      if (streak >= 3) box.innerHTML += '<div class="badge">🔥 3x Streak</div>';
+      if (totalAnswered >= 10) box.innerHTML += '<div class="badge">🎯 10 Questions</div>';
     }
 
     function showTab(tab) {
@@ -149,12 +175,10 @@
       document.getElementById(tab).classList.add('active');
     }
 
-    function signOut() {
-      auth.signOut();
-    }
-
     window.onload = () => {
-      updateProgressBar();
+      loadProgress();
+      showQuestion();
+      updateBadges();
     }
   </script>
 </body>
