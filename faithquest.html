@@ -62,7 +62,6 @@
       <div class="question-card">
         <h2>👤 Your Profile</h2>
         <input type="text" id="username" placeholder="Enter your name" style="width:100%;padding:8px;margin-bottom:10px;" />
-        <div class="avatar-select" id="avatarGrid"></div>
         <button onclick="saveProfile()">💾 Save Profile</button>
       </div>
     </section>
@@ -99,7 +98,7 @@
           updateProgressBar();
         }
       } else {
-        auth.signInAnonymously();
+        console.warn("Anonymous auth disabled – please sign in manually.");
       }
     });
 
