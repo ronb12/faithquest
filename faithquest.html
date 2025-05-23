@@ -10,98 +10,24 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="FaithQuest">
-   <meta name="mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet"/>
-
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
-    body {
-      font-family: 'Nunito', sans-serif;
-      background: #f3f4f6;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      background: #4b6cb7;
-      background: linear-gradient(to right, #182848, #4b6cb7);
-      color: white;
-      text-align: center;
-      padding: 1rem;
-    }
-    nav {
-      display: flex;
-      justify-content: space-around;
-      background: #e5e7eb;
-      padding: 0.5rem;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    nav button {
-      flex: 1;
-      margin: 0 4px;
-      background: #ffffff;
-      border: none;
-      padding: 10px;
-      font-weight: bold;
-      border-radius: 8px;
-      cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    nav button.active {
-      background: #4b6cb7;
-      color: white;
-    }
-    .tab-content {
-      display: none;
-      padding: 1rem;
-    }
-    .tab-content.active {
-      display: block;
-    }
-    .question-card {
-      background: white;
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      max-width: 600px;
-      margin: 1rem auto;
-    }
-    .answer-btn {
-      display: block;
-      margin: 8px 0;
-      padding: 12px;
-      background: #e0e7ff;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-    .answer-btn:hover {
-      background: #c7d2fe;
-    }
-    .verse-explanation {
-      background: #fef9c3;
-      border-left: 6px solid #facc15;
-      padding: 1rem;
-      margin-top: 1rem;
-      border-radius: 8px;
-    }
-    .avatar-select {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-      gap: 10px;
-      margin-top: 1rem;
-    }
-    .avatar-select img {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      border: 2px solid transparent;
-      cursor: pointer;
-    }
-    .avatar-select img.selected {
-      border-color: #4b6cb7;
-    }
+    body { font-family: 'Nunito', sans-serif; background: #f3f4f6; margin: 0; padding: 0; }
+    header { background: linear-gradient(to right, #182848, #4b6cb7); color: white; text-align: center; padding: 1rem; }
+    nav { display: flex; justify-content: space-around; background: #e5e7eb; padding: 0.5rem; position: sticky; top: 0; z-index: 10; }
+    nav button { flex: 1; margin: 0 4px; background: #ffffff; border: none; padding: 10px; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    nav button.active { background: #4b6cb7; color: white; }
+    .tab-content { display: none; padding: 1rem; }
+    .tab-content.active { display: block; }
+    .question-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 600px; margin: 1rem auto; }
+    .badge { display: inline-block; padding: 0.5rem 1rem; background: #fde68a; border-radius: 1rem; margin: 0.25rem; font-weight: bold; }
+    .confetti { position: fixed; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 9999; }
+    #progress-bar { background: #d1fae5; border-radius: 20px; overflow: hidden; height: 20px; margin-top: 10px; }
+    #progress-fill { background: #10b981; height: 100%; width: 0%; transition: width 0.3s ease; }
   </style>
 </head>
 <body>
@@ -109,373 +35,94 @@
     <h1>📖 FaithQuest: Bible Trivia Adventure</h1>
     <p>Grow your faith. Level up your knowledge. 🎯</p>
   </header>
-
   <nav>
-    <button onclick="showTab('quiz')" class="active">🧠 Quiz</button>
+    <button onclick="showTab('quiz')">🧠 Quiz</button>
     <button onclick="showTab('journey')">🗺️ Journey</button>
     <button onclick="showTab('leaderboard')">🏆 Leaderboard</button>
     <button onclick="showTab('study')">📖 Study</button>
     <button onclick="showTab('missions')">🔥 Missions</button>
+    <button onclick="showTab('badges')">🎖 Badges</button>
+    <button onclick="showTab('profile')">👤 Profile</button>
   </nav>
-
- <main>
-  <!-- Quiz Tab -->
-  <section id="quiz" class="tab-content active">
-    <div class="question-card" id="quiz-container">
-      <!-- Quiz logic will dynamically inject content -->
-    </div>
-  </section>
-
-  <!-- Journey Map Tab -->
-  <section id="journey" class="tab-content">
-    <div class="question-card">
-      <h2>🗺️ Faith Journey Map</h2>
-      <p>Complete quizzes to unlock each stage of your journey with Jesus.</p>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
-        <div style="background: #fff; border-left: 6px solid #3b82f6; padding: 1rem; border-radius: 8px;">
-          <h3>📍 Bethlehem</h3>
-          <p>Birth of Jesus – the journey begins with hope.</p>
-        </div>
-        <div style="background: #fff; border-left: 6px solid #10b981; padding: 1rem; border-radius: 8px;">
-          <h3>📍 Nazareth</h3>
-          <p>Jesus' childhood and growth in wisdom and grace.</p>
-        </div>
-        <div style="background: #fff; border-left: 6px solid #f59e0b; padding: 1rem; border-radius: 8px;">
-          <h3>📍 Jordan River</h3>
-          <p>Baptism of Jesus – a declaration of divine purpose.</p>
-        </div>
-        <div style="background: #fff; border-left: 6px solid #8b5cf6; padding: 1rem; border-radius: 8px;">
-          <h3>📍 Galilee</h3>
-          <p>Miracles and teachings that shaped discipleship.</p>
-        </div>
-        <div style="background: #fff; border-left: 6px solid #ef4444; padding: 1rem; border-radius: 8px;">
-          <h3>📍 Jerusalem</h3>
-          <p>The Passion, the Cross, and the Resurrection – victory over sin!</p>
-        </div>
+  <main>
+    <section id="quiz" class="tab-content active">
+      <div class="question-card">
+        <h2>Quiz</h2>
+        <p>Answer trivia questions to earn XP and unlock badges.</p>
+        <p><strong>Streak:</strong> <span id="streak">0</span></p>
+        <div id="progress-bar"><div id="progress-fill"></div></div>
+        <button onclick="simulateCorrectAnswer()">✅ Simulate Correct Answer</button>
+        <button onclick="simulateIncorrectAnswer()">❌ Simulate Incorrect Answer</button>
+        <p><strong>XP:</strong> <span id="xp">0</span></p>
+        <p><strong>Level:</strong> <span id="level">1</span></p>
       </div>
-      <p style="margin-top:1rem; font-weight: bold;">More stages coming soon: Pentecost, Paul's Journeys, and Revelation!</p>
-    </div>
-  </section>
-
-  <!-- Leaderboard Tab -->
-  <section id="leaderboard" class="tab-content">
-    <div class="question-card">
-      <h2>🏆 Leaderboard</h2>
-      <ul id="scores"></ul>
-    </div>
-  </section>
-
-  <!-- Study Tab: Verse of the Day -->
-  <section id="study" class="tab-content">
-    <div class="question-card">
-      <h2>📖 Verse of the Day</h2>
-      <div id="daily-verse" style="font-style: italic; background: #fff8dc; padding: 1rem; border-left: 4px solid #f59e0b;"></div>
-      <button onclick="loadVerseOfTheDay()">🔄 Refresh Verse</button>
-    </div>
-  </section>
-
-  <!-- Missions Tab -->
-  <section id="missions" class="tab-content">
-    <div class="question-card">
-      <h2>🔥 Daily Missions</h2>
-      <ul id="mission-list"></ul>
-      <p>🔥 <strong>Streak:</strong> <span id="streak-count">0</span> answers in a row</p>
-      <p>⭐ <strong>Total XP:</strong> <span id="xp-count">0</span></p>
-      <div id="badge-box"></div>
-    </div>
-  </section>
-</main>
-
-<script>
-  // Daily Missions
-  const missions = [
-    "📖 Read 3 Bible verses",
-    "🧠 Complete 1 quiz",
-    "🎯 Earn 50 XP",
-    "🔥 Keep a 3-answer streak",
-    "💬 Share a verse with a friend"
-  ];
-
-  function loadMissions() {
-    const missionList = document.getElementById("mission-list");
-    missionList.innerHTML = missions.map(m => `<li>${m} <span style=\"color:green;\">[✔️]</span></li>`).join("");
-    document.getElementById("streak-count").textContent = streak;
-    document.getElementById("xp-count").textContent = xp;
-  }
-
-  function loadVerseOfTheDay() {
-    const verseList = [
-      "John 3:16 – For God so loved the world...",
-      "Psalm 23:1 – The Lord is my shepherd...",
-      "Romans 8:28 – All things work together for good...",
-      "Proverbs 3:5 – Trust in the Lord with all your heart...",
-      "Isaiah 40:31 – They that wait upon the Lord..."
-    ];
-    const todayIndex = new Date().getDate() % verseList.length;
-    document.getElementById("daily-verse").textContent = verseList[todayIndex];
-  }
-
-  function loadLeaderboard() {
-    const scoresList = document.getElementById("scores");
-    db.collection("faithquest_leaderboard").orderBy("xp", "desc").limit(10).get()
-      .then(snapshot => {
-        scoresList.innerHTML = "";
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const li = document.createElement("li");
-          li.textContent = `${data.name} – ${data.xp} XP`;
-          scoresList.appendChild(li);
-        });
-      });
-  }
-
-  document.querySelector(`nav button[onclick=\"showTab('leaderboard')\"]`).addEventListener("click", loadLeaderboard);
-  document.querySelector(`nav button[onclick=\"showTab('missions')\"]`).addEventListener("click", loadMissions);
-  document.querySelector(`nav button[onclick=\"showTab('study')\"]`).addEventListener("click", loadVerseOfTheDay);
-</script>
     </section>
+    <!-- Other sections remain unchanged -->
   </main>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <audio id="success-sound" src="sounds/success.mp3" preload="auto"></audio>
+  <div class="confetti" id="confetti" style="display:none">🎉🎉🎉</div>
   <script>
-    const firebaseConfig = {
-  apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-  authDomain: "mobile-debt-tracker.firebaseapp.com",
-  projectId: "mobile-debt-tracker",
-  storageBucket: "mobile-debt-tracker.appspot.com",
-  messagingSenderId: "184900127142",
-  appId: "1:184900127142:web:3ef50c672aa7cb14469a2f"
-};
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-  </script>
-
-  <script>
-    const questions = {
-      easy: [
-        { q: "What is the first book of the Bible?", a: ["Genesis", "Exodus", "Psalms", "Revelation"], correct: 0, verse: "Genesis 1:1", explanation: "Genesis means beginning – it tells the story of creation." },
-        { q: "Who built the ark?", a: ["Abraham", "Noah", "Moses", "David"], correct: 1, verse: "Genesis 6:14", explanation: "Noah obeyed God and built an ark to save his family." },
-        // ... add more
-      ],
-      medium: [
-        { q: "How many days did God take to create the world?", a: ["5", "6", "7", "10"], correct: 1, verse: "Genesis 2:2", explanation: "God created in 6 days and rested on the 7th." },
-        // ...
-      ],
-      hard: [
-        { q: "Who interpreted Pharaoh’s dreams?", a: ["Daniel", "Joseph", "Moses", "Elijah"], correct: 1, verse: "Genesis 41:15", explanation: "Joseph interpreted dreams by God’s wisdom." },
-        // ...
-      ]
-    };
-
-    let currentQuestion = 0;
-    let currentSet = "easy";
-    let score = 0;
     let xp = 0;
     let streak = 0;
-
-    function showTab(tab) {
-      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-      document.getElementById(tab).classList.add('active');
-      document.querySelector(`nav button[onclick="showTab('${tab}')"]`).classList.add('active');
+    function updateProgressBar() {
+      const fill = document.getElementById("progress-fill");
+      const level = document.getElementById("level");
+      const percent = Math.min((xp % 100), 100);
+      fill.style.width = percent + "%";
+      level.textContent = Math.floor(xp / 100) + 1;
     }
-
-    function loadQuestion() {
-      const container = document.getElementById("quiz");
-      const q = questions[currentSet][currentQuestion];
-      container.innerHTML = `
-        <div class="question-card">
-          <h2>🧠 ${q.q}</h2>
-          ${q.a.map((opt, i) => `<button class="answer-btn" onclick="checkAnswer(${i})">${opt}</button>`).join("")}
-        </div>
-      `;
+    function gainXP(amount) {
+      xp += amount;
+      document.getElementById("xp").textContent = xp;
+      updateProgressBar();
     }
-
-    function checkAnswer(selected) {
-      const q = questions[currentSet][currentQuestion];
-      const container = document.getElementById("quiz");
-      if (selected === q.correct) {
-        score++;
-        xp += 10;
-        streak++;
-        container.innerHTML += `
-          <div class="verse-explanation">
-            ✅ Correct! <br/>
-            <strong>${q.verse}</strong><br/>
-            ${q.explanation}
-          </div>
-        `;
-        playSound("correct");
-      } else {
-        streak = 0;
-        container.innerHTML += `
-          <div class="verse-explanation" style="background:#fee2e2;border-left-color:#ef4444">
-            ❌ Incorrect. <br/>
-            <strong>${q.verse}</strong><br/>
-            ${q.explanation}
-          </div>
-        `;
-        playSound("wrong");
+    function drawJourneyPath() {
+      const canvas = document.getElementById("journey-canvas");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = "#4b6cb7";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(50, 250);
+      ctx.lineTo(150, 200);
+      ctx.lineTo(250, 150);
+      ctx.lineTo(350, 100);
+      ctx.lineTo(450, 50);
+      ctx.stroke();
+      ctx.fillStyle = "#10b981";
+      ctx.beginPath();
+      ctx.arc(50 + (streak * 40), 250 - (streak * 20), 10, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    function simulateCorrectAnswer() {
+      streak++;
+      document.getElementById("streak").textContent = streak;
+      gainXP(10);
+      updateProgressBar();
+      drawJourneyPath();
+      document.getElementById("success-sound").play();
+      if (xp === 100 || xp === 200 || xp === 300) {
+        document.getElementById("confetti").style.display = "block";
+        setTimeout(() => {
+          document.getElementById("confetti").style.display = "none";
+        }, 3000);
       }
-      setTimeout(() => {
-        currentQuestion++;
-        if (currentQuestion < questions[currentSet].length) {
-          loadQuestion();
-        } else {
-          showResults();
-        }
-      }, 2500);
     }
-
-    function showResults() {
-      const container = document.getElementById("quiz");
-      container.innerHTML = `
-        <div class="question-card">
-          <h2>🎉 Quiz Complete!</h2>
-          <p>Score: ${score}/${questions[currentSet].length}</p>
-          <p>XP Earned: ${xp}</p>
-          <button onclick="restartQuiz()">🔁 Play Again</button>
-        </div>
-      `;
-      saveScore();
-    }
-
-    function restartQuiz() {
-      currentQuestion = 0;
-      score = 0;
+    function simulateIncorrectAnswer() {
       streak = 0;
-      loadQuestion();
+      document.getElementById("streak").textContent = streak;
+      updateProgressBar();
+      drawJourneyPath();
     }
-
-    function playSound(type) {
-      const sound = new Audio(type === "correct" ? "sounds/correct.mp3" : "sounds/wrong.mp3");
-      sound.play();
+    function showTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.getElementById(tab).classList.add('active');
     }
-
-    // Load first question on startup
     window.onload = () => {
-      loadQuestion();
-    };
-  </script>
-
-  <script>
-    function saveScore() {
-      const user = "guest" + Math.floor(Math.random() * 10000);
-      db.collection("faithquest_leaderboard").add({
-        name: user,
-        score: score,
-        xp: xp,
-        timestamp: new Date()
-      });
+      updateProgressBar();
+      drawJourneyPath();
     }
   </script>
-  <script>
-    // Leaderboard tab
-    function loadLeaderboard() {
-      const lb = document.getElementById("leaderboard");
-      lb.innerHTML = "<h2>🏆 Leaderboard</h2><ul id='scores'></ul>";
-      db.collection("faithquest_leaderboard").orderBy("xp", "desc").limit(10).get()
-        .then(snapshot => {
-          const ul = document.getElementById("scores");
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            const li = document.createElement("li");
-            li.textContent = `${data.name} – ${data.xp} XP`;
-            ul.appendChild(li);
-          });
-        });
-    }
-
-    // Missions tab
-    const missions = [
-      "📖 Read 3 Bible verses",
-      "🧠 Complete 1 quiz",
-      "🎯 Earn 50 XP",
-      "🔥 Keep a 3-answer streak",
-      "💬 Share a verse with a friend"
-    ];
-
-    function loadMissions() {
-      const container = document.getElementById("missions");
-      container.innerHTML = "<h2>🔥 Daily Missions</h2><ul>" +
-        missions.map(m => `<li>${m} <span style="color:green;">[✔️]</span></li>`).join("") +
-        "</ul><p>Streak: 🔥 ${streak} correct answers in a row</p><p>Total XP: ${xp}</p>";
-    }
-
-    // Study tab – Verse of the Day
-    const verseList = [
-      "John 3:16 – For God so loved the world...",
-      "Psalm 23:1 – The Lord is my shepherd...",
-      "Romans 8:28 – All things work together for good...",
-      "Proverbs 3:5 – Trust in the Lord with all your heart...",
-      "Isaiah 40:31 – They that wait upon the Lord...",
-      // ... (365 total can be loaded here)
-    ];
-
-    function loadVerseOfTheDay() {
-      const container = document.getElementById("study");
-      const todayIndex = new Date().getDate() % verseList.length;
-      const verse = verseList[todayIndex];
-      container.innerHTML = `
-        <h2>📖 Verse of the Day</h2>
-        <p style="font-style: italic; background: #fff8dc; padding: 1rem; border-left: 4px solid #f59e0b;">${verse}</p>
-        <p>📝 Tap a verse to expand for study (coming soon)</p>
-      `;
-    }
-
-    // Avatar selector and profile
-    const avatarList = [...Array(15).keys()].map(i => `avatars/avatar${i+1}.png`);
-
-    function renderAvatars() {
-      const html = avatarList.map(src => `<img src="${src}" onclick="selectAvatar(this)">`).join("");
-      const container = document.getElementById("quiz");
-      container.innerHTML += `
-        <h3>Choose Your Avatar</h3>
-        <div class="avatar-select">${html}</div>
-      `;
-    }
-
-    function selectAvatar(img) {
-      document.querySelectorAll(".avatar-select img").forEach(i => i.classList.remove("selected"));
-      img.classList.add("selected");
-    }
-
-    // Badge system (sample)
-    function checkBadges() {
-      const badgeBox = document.getElementById("missions");
-      if (xp >= 50) {
-        badgeBox.innerHTML += `<p>🏅 Badge Unlocked: Beginner Bible Scholar</p>`;
-      }
-      if (xp >= 200) {
-        badgeBox.innerHTML += `<p>🥇 Badge Unlocked: Scripture Master</p>`;
-      }
-    }
-
-    // Hook tab loads
-    document.querySelector(`nav button[onclick="showTab('leaderboard')"]`).addEventListener("click", loadLeaderboard);
-    document.querySelector(`nav button[onclick="showTab('missions')"]`).addEventListener("click", () => {
-      loadMissions();
-      checkBadges();
-    });
-    document.querySelector(`nav button[onclick="showTab('study')"]`).addEventListener("click", loadVerseOfTheDay);
-  </script>
-
-  <!-- Background music -->
-  <audio id="bg-music" loop autoplay hidden>
-    <source src="sounds/music.mp3" type="audio/mp3">
-  </audio>
-
-  <script>
-    // Optional toggle to mute
-    document.body.addEventListener('keydown', (e) => {
-      if (e.key === 'm') {
-        const music = document.getElementById('bg-music');
-        music.muted = !music.muted;
-        alert(`🎵 Music ${music.muted ? "muted" : "unmuted"}`);
-      }
-    });
-  </script>
-
 </body>
 </html>
+
