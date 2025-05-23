@@ -43,6 +43,7 @@
     <button onclick="showTab('missions')">🔥 Missions</button>
     <button onclick="showTab('badges')">🎖 Badges</button>
     <button onclick="showTab('profile')">👤 Profile</button>
+    <button onclick="signOut()">🚪 Logout</button>
   </nav>
   <main>
     <section id="quiz" class="tab-content active">
@@ -57,13 +58,52 @@
         <p><strong>Level:</strong> <span id="level">1</span></p>
       </div>
     </section>
-    <!-- Other sections remain unchanged -->
+    <section id="profile" class="tab-content">
+      <div class="question-card">
+        <h2>👤 Your Profile</h2>
+        <input type="text" id="username" placeholder="Enter your name" style="width:100%;padding:8px;margin-bottom:10px;" />
+        <div class="avatar-select" id="avatarGrid"></div>
+        <button onclick="saveProfile()">💾 Save Profile</button>
+      </div>
+    </section>
   </main>
   <audio id="success-sound" src="sounds/success.mp3" preload="auto"></audio>
   <div class="confetti" id="confetti" style="display:none">🎉🎉🎉</div>
   <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+      authDomain: "mobile-debt-tracker.firebaseapp.com",
+      projectId: "mobile-debt-tracker",
+      storageBucket: "mobile-debt-tracker.appspot.com",
+      messagingSenderId: "184900127142",
+      appId: "1:184900127142:web:3ef50c672aa7cb14469a2f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    let user = null;
     let xp = 0;
     let streak = 0;
+    let avatar = "";
+
+    auth.onAuthStateChanged(async (u) => {
+      if (u) {
+        user = u;
+        const doc = await db.collection("faithquest_users").doc(user.uid).get();
+        if (doc.exists) {
+          const data = doc.data();
+          xp = data.xp || 0;
+          streak = data.streak || 0;
+          avatar = data.avatar || "";
+          document.getElementById("xp").textContent = xp;
+          document.getElementById("streak").textContent = streak;
+          updateProgressBar();
+        }
+      } else {
+        auth.signInAnonymously();
+      }
+    });
+
     function updateProgressBar() {
       const fill = document.getElementById("progress-fill");
       const level = document.getElementById("level");
@@ -71,58 +111,66 @@
       fill.style.width = percent + "%";
       level.textContent = Math.floor(xp / 100) + 1;
     }
+
+    function saveProfile() {
+      const name = document.getElementById("username").value;
+      if (user) {
+        db.collection("faithquest_users").doc(user.uid).set({ name, avatar, xp, streak }, { merge: true });
+        alert("Profile Saved!");
+      }
+    }
+
+    function renderAvatars() {
+      const container = document.getElementById("avatarGrid");
+      const avatars = [...Array(15).keys()].map(i => `avatars/avatar${i + 1}.png`);
+      container.innerHTML = avatars.map(a => `<img src="${a}" onclick="selectAvatar('${a}')" style="width:60px;border-radius:50%;margin:5px;${a===avatar?'border:3px solid #4b6cb7':''}"/>`).join("");
+    }
+
+    function selectAvatar(a) {
+      avatar = a;
+      renderAvatars();
+    }
+
     function gainXP(amount) {
       xp += amount;
       document.getElementById("xp").textContent = xp;
       updateProgressBar();
+      if (user) db.collection("faithquest_users").doc(user.uid).set({ xp }, { merge: true });
     }
-    function drawJourneyPath() {
-      const canvas = document.getElementById("journey-canvas");
-      const ctx = canvas.getContext("2d");
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.strokeStyle = "#4b6cb7";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(50, 250);
-      ctx.lineTo(150, 200);
-      ctx.lineTo(250, 150);
-      ctx.lineTo(350, 100);
-      ctx.lineTo(450, 50);
-      ctx.stroke();
-      ctx.fillStyle = "#10b981";
-      ctx.beginPath();
-      ctx.arc(50 + (streak * 40), 250 - (streak * 20), 10, 0, Math.PI * 2);
-      ctx.fill();
-    }
+
     function simulateCorrectAnswer() {
       streak++;
       document.getElementById("streak").textContent = streak;
       gainXP(10);
-      updateProgressBar();
-      drawJourneyPath();
       document.getElementById("success-sound").play();
-      if (xp === 100 || xp === 200 || xp === 300) {
+      if (xp % 100 === 0) {
         document.getElementById("confetti").style.display = "block";
         setTimeout(() => {
           document.getElementById("confetti").style.display = "none";
         }, 3000);
       }
+      if (user) db.collection("faithquest_users").doc(user.uid).set({ streak }, { merge: true });
     }
+
     function simulateIncorrectAnswer() {
       streak = 0;
       document.getElementById("streak").textContent = streak;
-      updateProgressBar();
-      drawJourneyPath();
+      if (user) db.collection("faithquest_users").doc(user.uid).set({ streak }, { merge: true });
     }
+
     function showTab(tab) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.getElementById(tab).classList.add('active');
     }
+
+    function signOut() {
+      auth.signOut();
+    }
+
     window.onload = () => {
       updateProgressBar();
-      drawJourneyPath();
+      renderAvatars();
     }
   </script>
 </body>
 </html>
-
