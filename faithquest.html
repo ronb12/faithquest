@@ -62,11 +62,11 @@
       <div class="question-card">
         <h2>👤 Your Profile</h2>
         <input type="text" id="username" placeholder="Enter your name" style="width:100%;padding:8px;margin-bottom:10px;" />
+        <div class="avatar-select" id="avatarGrid"></div>
         <button onclick="saveProfile()">💾 Save Profile</button>
       </div>
     </section>
   </main>
-  <audio id="success-sound" src="sounds/success.mp3" preload="auto"></audio>
   <div class="confetti" id="confetti" style="display:none">🎉🎉🎉</div>
   <script>
     const firebaseConfig = {
@@ -83,6 +83,7 @@
     let user = null;
     let xp = 0;
     let streak = 0;
+    let avatar = "";
 
     auth.onAuthStateChanged(async (u) => {
       if (u) {
@@ -92,6 +93,7 @@
           const data = doc.data();
           xp = data.xp || 0;
           streak = data.streak || 0;
+          avatar = data.avatar || "";
           document.getElementById("xp").textContent = xp;
           document.getElementById("streak").textContent = streak;
           updateProgressBar();
@@ -112,7 +114,7 @@
     function saveProfile() {
       const name = document.getElementById("username").value;
       if (user) {
-        db.collection("faithquest_users").doc(user.uid).set({ name, xp, streak }, { merge: true });
+        db.collection("faithquest_users").doc(user.uid).set({ name, avatar, xp, streak }, { merge: true });
         alert("Profile Saved!");
       }
     }
@@ -128,7 +130,6 @@
       streak++;
       document.getElementById("streak").textContent = streak;
       gainXP(10);
-      document.getElementById("success-sound").play();
       if (xp % 100 === 0) {
         document.getElementById("confetti").style.display = "block";
         setTimeout(() => {
