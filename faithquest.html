@@ -2,244 +2,379 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <title>FaithQuest</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FaithQuest – Bible Trivia Adventure</title>
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="favicon.ico" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="FaithQuest">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet"/>
+
   <style>
     body {
-      font-family: Arial, sans-serif;
-      margin: 0; padding: 0;
-      background: #eef3ff;
-      color: #333;
-      text-align: center;
+      font-family: 'Nunito', sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 0;
     }
-    .navbar {
+    header {
+      background: #4b6cb7;
+      background: linear-gradient(to right, #182848, #4b6cb7);
+      color: white;
+      text-align: center;
+      padding: 1rem;
+    }
+    nav {
       display: flex;
       justify-content: space-around;
-      background: #4a90e2;
-      color: white;
-      padding: 1em 0;
+      background: #e5e7eb;
+      padding: 0.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
-    .navbar button {
-      background: transparent;
+    nav button {
+      flex: 1;
+      margin: 0 4px;
+      background: #ffffff;
       border: none;
-      font-size: 1em;
-      color: white;
-      cursor: pointer;
-    }
-    .navbar button.active {
+      padding: 10px;
       font-weight: bold;
-      text-decoration: underline;
-    }
-    .container { max-width: 600px; margin: auto; padding: 2em; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-    .level-card {
-      background: #fff;
-      margin: 1em 0;
-      padding: 1em;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      cursor: pointer;
-    }
-    .locked { color: #aaa; background: #f4f4f4; cursor: default; }
-    .question-box {
-      background: #fff;
-      padding: 2em;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      margin-top: 1em;
-    }
-    .option {
-      background: #f1f1f1;
-      margin: 0.5em 0;
-      padding: 1em;
       border-radius: 8px;
       cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .correct { background: #c8f7c5 !important; }
-    .incorrect { background: #ffc2c2 !important; }
-    .score-bar { margin-top: 1em; }
+    nav button.active {
+      background: #4b6cb7;
+      color: white;
+    }
+    .tab-content {
+      display: none;
+      padding: 1rem;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .question-card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 600px;
+      margin: 1rem auto;
+    }
+    .answer-btn {
+      display: block;
+      margin: 8px 0;
+      padding: 12px;
+      background: #e0e7ff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    .answer-btn:hover {
+      background: #c7d2fe;
+    }
+    .verse-explanation {
+      background: #fef9c3;
+      border-left: 6px solid #facc15;
+      padding: 1rem;
+      margin-top: 1rem;
+      border-radius: 8px;
+    }
+    .avatar-select {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+      gap: 10px;
+      margin-top: 1rem;
+    }
+    .avatar-select img {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+    }
+    .avatar-select img.selected {
+      border-color: #4b6cb7;
+    }
   </style>
 </head>
 <body>
-  <div class="navbar">
-    <button id="btn-journey" onclick="showTab('journey')" class="active">🧭 Journey</button>
-    <button id="btn-leaderboard" onclick="showTab('leaderboard')">🏆 Leaderboard</button>
-    <button id="btn-study" onclick="showTab('study')">📖 Study</button>
-    <button id="btn-missions" onclick="showTab('missions')">🔥 Missions</button>
-  </div>
+  <header>
+    <h1>📖 FaithQuest: Bible Trivia Adventure</h1>
+    <p>Grow your faith. Level up your knowledge. 🎯</p>
+  </header>
 
-  <div class="container">
-    <div id="tab-journey" class="tab-content active">
-      <h1>🌟 FaithQuest Journey</h1>
-      <div id="avatar"></div>
-      <p id="levelInfo"></p>
-      <div id="xpBar" style="background:#ccc;height:8px;width:80%;margin:auto;border-radius:4px;overflow:hidden;">
-        <div id="xpProgress" style="height:8px;background:#5c8df6;width:0%"></div>
-      </div>
-      <div class="level-card" onclick="startLevel('bethlehem')" id="card-bethlehem">🔹 Bethlehem (Unlocked)</div>
-      <div class="level-card locked" id="card-nazareth">🔹 Nazareth (Locked)</div>
-      <div class="level-card locked" id="card-jerusalem">🔹 Jerusalem (Locked)</div>
-    </div>
+  <nav>
+    <button onclick="showTab('quiz')" class="active">🧠 Quiz</button>
+    <button onclick="showTab('journey')">🗺️ Journey</button>
+    <button onclick="showTab('leaderboard')">🏆 Leaderboard</button>
+    <button onclick="showTab('study')">📖 Study</button>
+    <button onclick="showTab('missions')">🔥 Missions</button>
+  </nav>
 
-    <div id="tab-leaderboard" class="tab-content">
-      <h2>🏆 Top Players</h2>
-      <div id="leaderboard"></div>
-    </div>
+  <main>
+    <section id="quiz" class="tab-content active">
+      <!-- Quiz Content Injected Here -->
+    </section>
 
-    <div id="tab-study" class="tab-content">
-      <h2>📖 Study Mode</h2>
-      <p>Verse explanations and deeper learning coming soon!</p>
-    </div>
+    <section id="journey" class="tab-content">
+      <!-- Journey Map Content -->
+    </section>
 
-    <div id="tab-missions" class="tab-content">
-      <h2>🔥 Daily Missions</h2>
-      <p>Complete missions to earn bonus XP and badges!</p>
-    </div>
+    <section id="leaderboard" class="tab-content">
+      <!-- Firebase Leaderboard -->
+    </section>
 
-    <div id="game" style="display:none;">
-      <div id="question" class="question-box"></div>
-      <div id="options"></div>
-      <div class="score-bar">
-        Lives: <span id="lives">3</span> | XP: <span id="xp">0</span>
-      </div>
-      <button onclick="exitGame()">⏹ Exit Game</button>
-    </div>
+    <section id="study" class="tab-content">
+      <!-- Verse of the Day + Study Explanations -->
+    </section>
 
-    <div id="game-over" style="display:none;">
-      <h2>Game Over</h2>
-      <p>Your final XP: <span id="final-xp">0</span></p>
-      <button onclick="location.reload()">Play Again</button>
-    </div>
-  </div>
-
+    <section id="missions" class="tab-content">
+      <!-- Daily Missions, Streaks, Power-ups -->
+    </section>
+  </main>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyAWT0pDA0Rqv9GI8wVgAOZKakpydjTI6z4",
-      authDomain: "faithquest-1a124.firebaseapp.com",
-      projectId: "faithquest-1a124"
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const auth = firebase.auth();
-    let currentUser = null;
+  </script>
 
-    auth.signInAnonymously().then(res => {
-      currentUser = res.user;
-      loadProfile();
-    });
-
-    const xpPerCorrect = 10;
-    let currentLevel = "bethlehem", current = 0, lives = 3, xp = 0;
-    let pool = [];
-
-    const levels = {
-      bethlehem: [
-        { q: "Where was Jesus born?", o: ["Nazareth", "Bethlehem", "Jerusalem", "Capernaum"], a: "Bethlehem" },
-        { q: "Who visited Jesus with gifts?", o: ["Shepherds", "Wise Men", "Soldiers", "Angels"], a: "Wise Men" }
+  <script>
+    const questions = {
+      easy: [
+        { q: "What is the first book of the Bible?", a: ["Genesis", "Exodus", "Psalms", "Revelation"], correct: 0, verse: "Genesis 1:1", explanation: "Genesis means beginning – it tells the story of creation." },
+        { q: "Who built the ark?", a: ["Abraham", "Noah", "Moses", "David"], correct: 1, verse: "Genesis 6:14", explanation: "Noah obeyed God and built an ark to save his family." },
+        // ... add more
       ],
-      nazareth: [
-        { q: "Who baptized Jesus?", o: ["Paul", "John", "Peter", "David"], a: "John" },
-        { q: "What was Jesus' first miracle?", o: ["Healing", "Walking on water", "Water to wine", "Feeding 5,000"], a: "Water to wine" }
+      medium: [
+        { q: "How many days did God take to create the world?", a: ["5", "6", "7", "10"], correct: 1, verse: "Genesis 2:2", explanation: "God created in 6 days and rested on the 7th." },
+        // ...
       ],
-      jerusalem: [
-        { q: "Where was Jesus crucified?", o: ["Nazareth", "Bethlehem", "Golgotha", "Rome"], a: "Golgotha" },
-        { q: "Who denied Jesus three times?", o: ["John", "Peter", "James", "Thomas"], a: "Peter" }
+      hard: [
+        { q: "Who interpreted Pharaoh’s dreams?", a: ["Daniel", "Joseph", "Moses", "Elijah"], correct: 1, verse: "Genesis 41:15", explanation: "Joseph interpreted dreams by God’s wisdom." },
+        // ...
       ]
     };
 
+    let currentQuestion = 0;
+    let currentSet = "easy";
+    let score = 0;
+    let xp = 0;
+    let streak = 0;
+
     function showTab(tab) {
-      document.querySelectorAll(".tab-content").forEach(div => div.classList.remove("active"));
-      const content = document.querySelector(`#tab-${tab}`);
-      if (content) content.classList.add("active");
-
-      document.querySelectorAll(".navbar button").forEach(btn => btn.classList.remove("active"));
-      const tabBtn = document.querySelector(`#btn-${tab}`);
-      if (tabBtn) tabBtn.classList.add("active");
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+      document.getElementById(tab).classList.add('active');
+      document.querySelector(`nav button[onclick="showTab('${tab}')"]`).classList.add('active');
     }
 
-    function loadProfile() {
-      const avatar = localStorage.getItem("avatar") || "seeker";
-      const totalXP = parseInt(localStorage.getItem("totalXP") || '0');
-      const level = Math.floor(totalXP / 100) + 1;
-      document.getElementById("avatar").innerHTML = `<img src='avatars/${avatar}.png' style='width:64px;border-radius:50%;'>`;
-      document.getElementById("levelInfo").textContent = `Level ${level} ${avatar}`;
-      document.getElementById("xpProgress").style.width = `${totalXP % 100}%`;
-      if (totalXP >= 30) document.getElementById("card-nazareth").classList.remove("locked");
-      if (totalXP >= 60) document.getElementById("card-jerusalem").classList.remove("locked");
+    function loadQuestion() {
+      const container = document.getElementById("quiz");
+      const q = questions[currentSet][currentQuestion];
+      container.innerHTML = `
+        <div class="question-card">
+          <h2>🧠 ${q.q}</h2>
+          ${q.a.map((opt, i) => `<button class="answer-btn" onclick="checkAnswer(${i})">${opt}</button>`).join("")}
+        </div>
+      `;
     }
 
-    function startLevel(level) {
-      if (document.getElementById("card-" + level).classList.contains("locked")) return;
-      currentLevel = level;
-      pool = [...levels[level]];
-      current = 0;
-      lives = 3;
-      xp = 0;
-      document.getElementById("journey").style.display = "none";
-      document.getElementById("game").style.display = "block";
-      document.getElementById("lives").textContent = lives;
-      document.getElementById("xp").textContent = xp;
-      showQuestion();
-    }
-
-    function showQuestion() {
-      if (current >= pool.length || lives <= 0) return endGame();
-      const q = pool[current];
-      document.getElementById("question").textContent = q.q;
-      const optBox = document.getElementById("options");
-      optBox.innerHTML = "";
-      q.o.forEach(opt => {
-        const btn = document.createElement("div");
-        btn.className = "option";
-        btn.textContent = opt;
-        btn.onclick = () => checkAnswer(opt, q.a, btn);
-        optBox.appendChild(btn);
-      });
-    }
-
-    function checkAnswer(selected, correct, btn) {
-      if (selected === correct) {
-        btn.classList.add("correct");
-        xp += xpPerCorrect;
+    function checkAnswer(selected) {
+      const q = questions[currentSet][currentQuestion];
+      const container = document.getElementById("quiz");
+      if (selected === q.correct) {
+        score++;
+        xp += 10;
+        streak++;
+        container.innerHTML += `
+          <div class="verse-explanation">
+            ✅ Correct! <br/>
+            <strong>${q.verse}</strong><br/>
+            ${q.explanation}
+          </div>
+        `;
+        playSound("correct");
       } else {
-        btn.classList.add("incorrect");
-        lives--;
+        streak = 0;
+        container.innerHTML += `
+          <div class="verse-explanation" style="background:#fee2e2;border-left-color:#ef4444">
+            ❌ Incorrect. <br/>
+            <strong>${q.verse}</strong><br/>
+            ${q.explanation}
+          </div>
+        `;
+        playSound("wrong");
       }
-      document.getElementById("lives").textContent = lives;
-      document.getElementById("xp").textContent = xp;
-      setTimeout(() => { current++; showQuestion(); }, 1200);
+      setTimeout(() => {
+        currentQuestion++;
+        if (currentQuestion < questions[currentSet].length) {
+          loadQuestion();
+        } else {
+          showResults();
+        }
+      }, 2500);
     }
 
-    function endGame() {
-      document.getElementById("game").style.display = "none";
-      document.getElementById("game-over").style.display = "block";
-      document.getElementById("final-xp").textContent = xp;
-      const total = parseInt(localStorage.getItem("totalXP") || '0');
-      localStorage.setItem("totalXP", total + xp);
+    function showResults() {
+      const container = document.getElementById("quiz");
+      container.innerHTML = `
+        <div class="question-card">
+          <h2>🎉 Quiz Complete!</h2>
+          <p>Score: ${score}/${questions[currentSet].length}</p>
+          <p>XP Earned: ${xp}</p>
+          <button onclick="restartQuiz()">🔁 Play Again</button>
+        </div>
+      `;
+      saveScore();
     }
 
-    function exitGame() {
-      document.getElementById("game").style.display = "none";
-      document.getElementById("journey").style.display = "block";
-      loadProfile();
+    function restartQuiz() {
+      currentQuestion = 0;
+      score = 0;
+      streak = 0;
+      loadQuestion();
     }
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/faithquest/service-worker.js')
-        .then(() => console.log("✅ Service Worker registered"))
-        .catch(err => console.error("❌ Service Worker failed:", err));
+    function playSound(type) {
+      const sound = new Audio(type === "correct" ? "sounds/correct.mp3" : "sounds/wrong.mp3");
+      sound.play();
     }
 
+    // Load first question on startup
     window.onload = () => {
-      loadProfile();
-      showTab('journey');
+      loadQuestion();
     };
   </script>
+
+  <script>
+    function saveScore() {
+      const user = "guest" + Math.floor(Math.random() * 10000);
+      db.collection("faithquest_leaderboard").add({
+        name: user,
+        score: score,
+        xp: xp,
+        timestamp: new Date()
+      });
+    }
+  </script>
+  <script>
+    // Leaderboard tab
+    function loadLeaderboard() {
+      const lb = document.getElementById("leaderboard");
+      lb.innerHTML = "<h2>🏆 Leaderboard</h2><ul id='scores'></ul>";
+      db.collection("faithquest_leaderboard").orderBy("xp", "desc").limit(10).get()
+        .then(snapshot => {
+          const ul = document.getElementById("scores");
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const li = document.createElement("li");
+            li.textContent = `${data.name} – ${data.xp} XP`;
+            ul.appendChild(li);
+          });
+        });
+    }
+
+    // Missions tab
+    const missions = [
+      "📖 Read 3 Bible verses",
+      "🧠 Complete 1 quiz",
+      "🎯 Earn 50 XP",
+      "🔥 Keep a 3-answer streak",
+      "💬 Share a verse with a friend"
+    ];
+
+    function loadMissions() {
+      const container = document.getElementById("missions");
+      container.innerHTML = "<h2>🔥 Daily Missions</h2><ul>" +
+        missions.map(m => `<li>${m} <span style="color:green;">[✔️]</span></li>`).join("") +
+        "</ul><p>Streak: 🔥 ${streak} correct answers in a row</p><p>Total XP: ${xp}</p>";
+    }
+
+    // Study tab – Verse of the Day
+    const verseList = [
+      "John 3:16 – For God so loved the world...",
+      "Psalm 23:1 – The Lord is my shepherd...",
+      "Romans 8:28 – All things work together for good...",
+      "Proverbs 3:5 – Trust in the Lord with all your heart...",
+      "Isaiah 40:31 – They that wait upon the Lord...",
+      // ... (365 total can be loaded here)
+    ];
+
+    function loadVerseOfTheDay() {
+      const container = document.getElementById("study");
+      const todayIndex = new Date().getDate() % verseList.length;
+      const verse = verseList[todayIndex];
+      container.innerHTML = `
+        <h2>📖 Verse of the Day</h2>
+        <p style="font-style: italic; background: #fff8dc; padding: 1rem; border-left: 4px solid #f59e0b;">${verse}</p>
+        <p>📝 Tap a verse to expand for study (coming soon)</p>
+      `;
+    }
+
+    // Avatar selector and profile
+    const avatarList = [...Array(15).keys()].map(i => `avatars/avatar${i+1}.png`);
+
+    function renderAvatars() {
+      const html = avatarList.map(src => `<img src="${src}" onclick="selectAvatar(this)">`).join("");
+      const container = document.getElementById("quiz");
+      container.innerHTML += `
+        <h3>Choose Your Avatar</h3>
+        <div class="avatar-select">${html}</div>
+      `;
+    }
+
+    function selectAvatar(img) {
+      document.querySelectorAll(".avatar-select img").forEach(i => i.classList.remove("selected"));
+      img.classList.add("selected");
+    }
+
+    // Badge system (sample)
+    function checkBadges() {
+      const badgeBox = document.getElementById("missions");
+      if (xp >= 50) {
+        badgeBox.innerHTML += `<p>🏅 Badge Unlocked: Beginner Bible Scholar</p>`;
+      }
+      if (xp >= 200) {
+        badgeBox.innerHTML += `<p>🥇 Badge Unlocked: Scripture Master</p>`;
+      }
+    }
+
+    // Hook tab loads
+    document.querySelector(`nav button[onclick="showTab('leaderboard')"]`).addEventListener("click", loadLeaderboard);
+    document.querySelector(`nav button[onclick="showTab('missions')"]`).addEventListener("click", () => {
+      loadMissions();
+      checkBadges();
+    });
+    document.querySelector(`nav button[onclick="showTab('study')"]`).addEventListener("click", loadVerseOfTheDay);
+  </script>
+
+  <!-- Background music -->
+  <audio id="bg-music" loop autoplay hidden>
+    <source src="sounds/music.mp3" type="audio/mp3">
+  </audio>
+
+  <script>
+    // Optional toggle to mute
+    document.body.addEventListener('keydown', (e) => {
+      if (e.key === 'm') {
+        const music = document.getElementById('bg-music');
+        music.muted = !music.muted;
+        alert(`🎵 Music ${music.muted ? "muted" : "unmuted"}`);
+      }
+    });
+  </script>
+
 </body>
 </html>
