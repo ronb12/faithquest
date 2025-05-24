@@ -6,12 +6,13 @@
   <title>FaithQuest – Faith Journal</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="favicon.ico" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png" />
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="FaithQuest">
-  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#4b6cb7">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet"/>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
     body { font-family: 'Nunito', sans-serif; background: #f3f4f6; margin: 0; padding: 0; }
     header { background: linear-gradient(to right, #182848, #4b6cb7); color: white; text-align: center; padding: 1rem; }
@@ -90,26 +91,75 @@
       </div>
     </section>
   </main>
+
   <script>
+    // Firebase Config - FAITHQUEST JOURNAL
+    const firebaseConfig = {
+      apiKey: "AIzaSyDdZtv_YVU7g_g6PhVZ5bKc1Y9h5axF2kY",
+      authDomain: "faithquest-journal.firebaseapp.com",
+      projectId: "faithquest-journal"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    let currentUser = null;
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUser = user;
+        updateTracker();
+      } else {
+        auth.signInAnonymously().catch(console.error);
+      }
+    });
+
     function showTab(tab) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.getElementById(tab).classList.add('active');
     }
 
     function saveEntry(type) {
-      const entry = document.getElementById(`${type}Entry`).value;
-      const key = `faithquest_${type}`;
-      const list = JSON.parse(localStorage.getItem(key) || '[]');
-      list.push({ date: new Date().toLocaleString(), entry });
-      localStorage.setItem(key, JSON.stringify(list));
-      updateTracker();
-      alert("Saved!");
+      const entry = document.getElementById(`${type}Entry`).value.trim();
+      if (!entry) return alert("Please write something.");
+      if (!currentUser) return alert("Not signed in.");
+
+      db.collection("users")
+        .doc(currentUser.uid)
+        .collection("entries")
+        .add({
+          type,
+          entry,
+          date: new Date().toISOString()
+        })
+        .then(() => {
+          alert("✅ Entry saved!");
+          document.getElementById(`${type}Entry`).value = "";
+          updateTracker();
+        })
+        .catch(err => {
+          console.error("Error saving:", err);
+          alert("❌ Failed to save.");
+        });
     }
 
-    function saveProfile() {
-      const name = document.getElementById("username").value;
-      localStorage.setItem("faithquest_user", name);
-      alert("Profile saved!");
+    function updateTracker() {
+      if (!currentUser) return;
+      db.collection("users")
+        .doc(currentUser.uid)
+        .collection("entries")
+        .get()
+        .then(snapshot => {
+          let journal = 0, gratitude = 0, prayers = 0;
+          snapshot.forEach(doc => {
+            const d = doc.data();
+            if (d.type === "journal") journal++;
+            if (d.type === "gratitude") gratitude++;
+            if (d.type === "prayers") prayers++;
+          });
+          document.getElementById("journalCount").textContent = journal;
+          document.getElementById("gratitudeCount").textContent = gratitude;
+          document.getElementById("prayerCount").textContent = prayers;
+        });
     }
 
     function loadVerse() {
@@ -123,16 +173,16 @@
       document.getElementById("verseText").textContent = verses[Math.floor(Math.random() * verses.length)];
     }
 
-    function updateTracker() {
-      document.getElementById("journalCount").textContent = JSON.parse(localStorage.getItem("faithquest_journal") || '[]').length;
-      document.getElementById("gratitudeCount").textContent = JSON.parse(localStorage.getItem("faithquest_gratitude") || '[]').length;
-      document.getElementById("prayerCount").textContent = JSON.parse(localStorage.getItem("faithquest_prayers") || '[]').length;
+    function saveProfile() {
+      const name = document.getElementById("username").value.trim();
+      if (!name) return alert("Enter your name.");
+      localStorage.setItem("faithquest_user", name);
+      alert("Profile saved!");
     }
 
     window.onload = () => {
       loadVerse();
-      updateTracker();
-    }
+    };
   </script>
 </body>
 </html>
