@@ -13,6 +13,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     body { font-family: 'Nunito', sans-serif; background: #f3f4f6; margin: 0; padding: 0; }
     header { background: linear-gradient(to right, #182848, #4b6cb7); color: white; text-align: center; padding: 1rem; }
@@ -28,7 +29,7 @@
 </head>
 <body>
   <header>
-    <h1>🕊️ FaithQuest: Faith-Based Journal</h1>
+    <h1>🔊 FaithQuest: Faith-Based Journal</h1>
     <p>Reflect. Grow. Connect with God. 📖</p>
   </header>
   <nav>
@@ -37,6 +38,8 @@
     <button onclick="showTab('gratitude')">🙏 Gratitude</button>
     <button onclick="showTab('prayers')">🧎 Prayer Log</button>
     <button onclick="showTab('devotions')">📚 Devotions</button>
+    <button onclick="showTab('favorites')">⭐ Favorites</button>
+    <button onclick="showTab('bible')">📖 Bible</button>
     <button onclick="showTab('tracker')">📈 Progress</button>
     <button onclick="showTab('settings')">⚙️ Settings</button>
   </nav>
@@ -72,7 +75,38 @@
     <section id="devotions" class="tab-content">
       <div class="card">
         <h2>📚 Devotional Archive</h2>
-        <p><em>Coming soon: daily devotionals from Psalms, Proverbs, and the Gospels!</em></p>
+        <p><strong>Today’s Devotional:</strong></p>
+        <div id="dailyDevotional" style="background:#f9fafb; padding:1rem; border-radius:10px; margin-bottom:1rem;"></div>
+        <input type="text" id="devotionSearch" placeholder="Search devotionals...">
+        <label for="devotionSelect">Explore by Category:</label>
+        <select id="devotionSelect" onchange="showDevotional(this.value)">
+          <option value="psalms">Psalms</option>
+          <option value="proverbs">Proverbs</option>
+          <option value="gospels">Gospels</option>
+        </select>
+        <div id="devotionContent" style="margin-top: 1rem;"></div>
+      </div>
+    </section>
+    <section id="favorites" class="tab-content">
+      <div class="card">
+        <h2>⭐ Saved Devotionals</h2>
+        <div id="favoritesList">Loading...</div>
+      </div>
+    </section>
+    <section id="bible" class="tab-content">
+      <div class="card">
+        <h2>📖 Bible Reader</h2>
+        <label>Book:</label>
+        <select id="bibleBook"></select>
+        <label>Chapter:</label>
+        <select id="bibleChapter"></select>
+        <label>Verse:</label>
+        <select id="bibleVerse"></select>
+        <div id="bibleText" style="margin-top: 1rem; background: #f4f4f4; padding: 1rem; border-radius: 10px;"></div>
+        <h3>🔍 Search Bible</h3>
+        <input type="text" id="bibleSearch" placeholder="Enter keyword...">
+        <button onclick="searchBible()">Search</button>
+        <div id="searchResults" style="margin-top: 1rem;"></div>
       </div>
     </section>
     <section id="tracker" class="tab-content">
@@ -91,98 +125,212 @@
       </div>
     </section>
   </main>
-
   <script>
-    // Firebase Config - FAITHQUEST JOURNAL
-    const firebaseConfig = {
-      apiKey: "AIzaSyDdZtv_YVU7g_g6PhVZ5bKc1Y9h5axF2kY",
-      authDomain: "faithquest-journal.firebaseapp.com",
-      projectId: "faithquest-journal"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    let currentUser = null;
+  const firebaseConfig = {
+    apiKey: "AIzaSyDdZtv_YVU7g_g6PhVZ5bKc1Y9h5axF2kY",
+    authDomain: "faithquest-journal.firebaseapp.com",
+    projectId: "faithquest-journal"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  let currentUser = null;
 
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        currentUser = user;
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      currentUser = user;
+      updateTracker();
+      loadFavorites();
+    } else {
+      auth.signInAnonymously().catch(console.error);
+    }
+  });
+
+  function showTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(tab).classList.add('active');
+  }
+
+  function saveEntry(type) {
+    const entry = document.getElementById(`${type}Entry`).value.trim();
+    if (!entry) return alert("Please write something.");
+    if (!currentUser) return alert("Not signed in.");
+    db.collection("users").doc(currentUser.uid).collection("entries").add({ type, entry, date: new Date().toISOString() })
+      .then(() => {
+        alert("✅ Entry saved!");
+        document.getElementById(`${type}Entry`).value = "";
         updateTracker();
-      } else {
-        auth.signInAnonymously().catch(console.error);
+      })
+      .catch(err => alert("❌ Failed to save."));
+  }
+
+  function updateTracker() {
+    if (!currentUser) return;
+    db.collection("users").doc(currentUser.uid).collection("entries").get()
+      .then(snapshot => {
+        let journal = 0, gratitude = 0, prayers = 0;
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          if (d.type === "journal") journal++;
+          if (d.type === "gratitude") gratitude++;
+          if (d.type === "prayers") prayers++;
+        });
+        document.getElementById("journalCount").textContent = journal;
+        document.getElementById("gratitudeCount").textContent = gratitude;
+        document.getElementById("prayerCount").textContent = prayers;
+      });
+  }
+
+  function saveProfile() {
+    const name = document.getElementById("username").value.trim();
+    if (!name) return alert("Enter your name.");
+    localStorage.setItem("faithquest_user", name);
+    alert("Profile saved!");
+  }
+
+  function loadVerse() {
+    const verses = [
+      "John 3:16 – For God so loved the world...",
+      "Psalm 23:1 – The Lord is my shepherd...",
+      "Proverbs 3:5 – Trust in the Lord with all your heart...",
+      "Isaiah 41:10 – Fear not, for I am with you...",
+      "Romans 8:28 – All things work together for good..."
+    ];
+    document.getElementById("verseText").textContent = verses[Math.floor(Math.random() * verses.length)];
+  }
+
+  const devotionals = {
+    psalms: [
+      { title: "Peace in God's Presence", verse: "Psalm 46:10", reflection: "Even in chaos, God's stillness gives peace." },
+      { title: "My Refuge and Strength", verse: "Psalm 91:2", reflection: "Trust in God shelters your heart." }
+    ],
+    proverbs: [
+      { title: "Wisdom Above All", verse: "Proverbs 4:7", reflection: "Godly wisdom strengthens your faith." },
+      { title: "Guard Your Heart", verse: "Proverbs 4:23", reflection: "A pure heart leads to a fruitful life." }
+    ],
+    gospels: [
+      { title: "The Light of the World", verse: "John 8:12", reflection: "Let Christ's light guide you." },
+      { title: "Come to Me", verse: "Matthew 11:28", reflection: "Jesus invites the broken." }
+    ]
+  };
+
+  function showRandomDailyDevotional() {
+    const all = [...devotionals.psalms, ...devotionals.proverbs, ...devotionals.gospels];
+    const dev = all[Math.floor(Math.random() * all.length)];
+    document.getElementById("dailyDevotional").innerHTML = `
+      <h3>${dev.title}</h3>
+      <p><strong>${dev.verse}</strong></p>
+      <p>${dev.reflection}</p>
+      <button onclick='saveFavorite(${JSON.stringify(dev)})'>⭐ Save</button>
+    `;
+  }
+
+  function showDevotional(category) {
+    const container = document.getElementById("devotionContent");
+    const query = document.getElementById("devotionSearch").value.toLowerCase();
+    container.innerHTML = devotionals[category].filter(dev =>
+      dev.title.toLowerCase().includes(query) ||
+      dev.verse.toLowerCase().includes(query) ||
+      dev.reflection.toLowerCase().includes(query)
+    ).map(dev => `
+      <div style="margin-bottom:1rem;padding:1rem;border:1px solid #ddd;border-radius:10px">
+        <h3>${dev.title}</h3>
+        <p><strong>${dev.verse}</strong></p>
+        <p>${dev.reflection}</p>
+        <button onclick='saveFavorite(${JSON.stringify(dev)})'>⭐ Save</button>
+      </div>
+    `).join('');
+  }
+
+  function saveFavorite(dev) {
+    if (!currentUser) return alert("Sign in required.");
+    db.collection("users").doc(currentUser.uid).collection("favorites").add({ ...dev, savedAt: new Date().toISOString() })
+      .then(() => alert("Saved to Favorites"))
+      .catch(() => alert("Failed to save favorite."));
+  }
+
+  function loadFavorites() {
+    if (!currentUser) return;
+    db.collection("users").doc(currentUser.uid).collection("favorites").get()
+      .then(snapshot => {
+        const html = snapshot.docs.map(doc => {
+          const d = doc.data();
+          return `
+            <div style='padding:1rem;border:1px solid #ccc;margin-bottom:1rem;border-radius:10px'>
+              <h3>${d.title}</h3>
+              <p><strong>${d.verse}</strong></p>
+              <p>${d.reflection}</p>
+              <button onclick="deleteFavorite('${doc.id}')">🗑️ Remove</button>
+            </div>
+          `;
+        }).join('');
+        document.getElementById("favoritesList").innerHTML = html || "<p>No favorites saved yet.</p>";
+      });
+  }
+
+  function deleteFavorite(id) {
+    db.collection("users").doc(currentUser.uid).collection("favorites").doc(id).delete()
+      .then(() => loadFavorites());
+  }
+
+  let bibleData = {};
+  async function loadBible() {
+    const res = await fetch("bible-kjv.json");
+    bibleData = await res.json();
+    const books = Object.keys(bibleData);
+    const bookSelect = document.getElementById("bibleBook");
+    bookSelect.innerHTML = books.map(b => `<option>${b}</option>`).join('');
+    bookSelect.onchange = updateChapters;
+    updateChapters();
+  }
+
+  function updateChapters() {
+    const book = document.getElementById("bibleBook").value;
+    const chapters = Object.keys(bibleData[book]);
+    const chapterSelect = document.getElementById("bibleChapter");
+    chapterSelect.innerHTML = chapters.map(c => `<option>${c}</option>`).join('');
+    chapterSelect.onchange = updateVerses;
+    updateVerses();
+  }
+
+  function updateVerses() {
+    const book = document.getElementById("bibleBook").value;
+    const chapter = document.getElementById("bibleChapter").value;
+    const verses = bibleData[book][chapter];
+    const verseSelect = document.getElementById("bibleVerse");
+    verseSelect.innerHTML = verses.map((_, i) => `<option value='${i}'>${i + 1}</option>`).join('');
+    verseSelect.onchange = showVerse;
+    showVerse();
+  }
+
+  function showVerse() {
+    const book = document.getElementById("bibleBook").value;
+    const chapter = document.getElementById("bibleChapter").value;
+    const verse = document.getElementById("bibleVerse").value;
+    document.getElementById("bibleText").textContent = bibleData[book][chapter][verse];
+  }
+
+  function searchBible() {
+    const query = document.getElementById("bibleSearch").value.toLowerCase();
+    const resultContainer = document.getElementById("searchResults");
+    let results = [];
+    for (let book in bibleData) {
+      for (let chapter in bibleData[book]) {
+        bibleData[book][chapter].forEach((verse, i) => {
+          if (verse.toLowerCase().includes(query)) {
+            results.push(`<p><strong>${book} ${chapter}:${i + 1}</strong> - ${verse}</p>`);
+          }
+        });
       }
-    });
-
-    function showTab(tab) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.getElementById(tab).classList.add('active');
     }
+    resultContainer.innerHTML = results.length ? results.join('') : '<p>No results found.</p>';
+  }
 
-    function saveEntry(type) {
-      const entry = document.getElementById(`${type}Entry`).value.trim();
-      if (!entry) return alert("Please write something.");
-      if (!currentUser) return alert("Not signed in.");
-
-      db.collection("users")
-        .doc(currentUser.uid)
-        .collection("entries")
-        .add({
-          type,
-          entry,
-          date: new Date().toISOString()
-        })
-        .then(() => {
-          alert("✅ Entry saved!");
-          document.getElementById(`${type}Entry`).value = "";
-          updateTracker();
-        })
-        .catch(err => {
-          console.error("Error saving:", err);
-          alert("❌ Failed to save.");
-        });
-    }
-
-    function updateTracker() {
-      if (!currentUser) return;
-      db.collection("users")
-        .doc(currentUser.uid)
-        .collection("entries")
-        .get()
-        .then(snapshot => {
-          let journal = 0, gratitude = 0, prayers = 0;
-          snapshot.forEach(doc => {
-            const d = doc.data();
-            if (d.type === "journal") journal++;
-            if (d.type === "gratitude") gratitude++;
-            if (d.type === "prayers") prayers++;
-          });
-          document.getElementById("journalCount").textContent = journal;
-          document.getElementById("gratitudeCount").textContent = gratitude;
-          document.getElementById("prayerCount").textContent = prayers;
-        });
-    }
-
-    function loadVerse() {
-      const verses = [
-        "John 3:16 – For God so loved the world...",
-        "Psalm 23:1 – The Lord is my shepherd...",
-        "Proverbs 3:5 – Trust in the Lord with all your heart...",
-        "Isaiah 41:10 – Fear not, for I am with you...",
-        "Romans 8:28 – All things work together for good..."
-      ];
-      document.getElementById("verseText").textContent = verses[Math.floor(Math.random() * verses.length)];
-    }
-
-    function saveProfile() {
-      const name = document.getElementById("username").value.trim();
-      if (!name) return alert("Enter your name.");
-      localStorage.setItem("faithquest_user", name);
-      alert("Profile saved!");
-    }
-
-    window.onload = () => {
-      loadVerse();
-    };
-  </script>
+  window.onload = () => {
+    loadVerse();
+    showRandomDailyDevotional();
+    loadBible();
+  };
+</script>
 </body>
 </html>
